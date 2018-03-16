@@ -46,7 +46,21 @@ begin
 		if rising_edge(clk) then
 --		counter <= counter+1;
 			mult : for I in 0 to 24 loop
-				DSP_outputs(I) <= weight(I) * neurons(i);
+                
+
+		    DSP_outputs(I) <= --below pramga is added to let simulation work the same as synthesis. 
+                --pragma synthesis_off
+                RESIZE(
+                --pragma synthesis_on
+                    weight(I) * neurons(i)
+                    
+                --pragma synthesis_off
+                    ,16)
+                --pragma synthesis_on
+                ;
+
+                
+                
 			end loop mult;
 		end if;
 	end process;

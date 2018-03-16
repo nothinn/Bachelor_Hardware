@@ -270,3 +270,4 @@ __pycache__/
 *.pyc
 *.jou
 /mnist_hardware/vivado_project
+/mnist_hardware/sim/work
