@@ -1,0 +1,1 @@
+D:\Xilinx\Vivado\2017.4\bin\vivado.bat -mode batch -source project.tcl
