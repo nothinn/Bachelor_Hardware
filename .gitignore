@@ -11,9 +11,9 @@
 
 #VIVADO, written by Simon
 .Xil/ #Made by vivado
-.jou  #Log file not needed
-.log  #Journal file not needed
-vivado_project/ #Project generated and files with this.
+*.jou  #Log file not needed
+*.log  #Journal file not needed
+*vivado_project/ #Project generated and files with this.
 V3S_project/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
