@@ -6,6 +6,8 @@ package Types is
 	type MAC_weights is array(24 downto 0) of signed(7 downto 0);
 	type MAC_inputs is array(24 downto 0) of signed(15 downto 0);
 	subtype MAC_result is signed(15 downto 0);
+    
+    type ram_input is array(integer range <>) of std_logic_vector(15 downto 0);
 	
 	constant in_simulation : boolean := false
     --pragma synthesis_off
