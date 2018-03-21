@@ -15,73 +15,84 @@ end entity;
 
 architecture rtl of top is
     
-    component multiplier is
-        port (
-            clk : in std_logic;
-            SW  : in STD_LOGIC_VECTOR(15 downto 0);
-            LED : out STD_LOGIC_VECTOR(15 downto 0)
+    
+    component weightsRom2 is
+    generic(
+        addressX: integer range 0 to 4;
+        addressY: integer range 0 to 4
         );
-    end component;
-    
-    component mac is
-    	port(
-        clk     : in  std_logic;
-        rst     : in  std_logic;
-        weight  : in  MAC_weights;
-        neurons : in  MAC_inputs;
-        results : out MAC_result
+    port (
+        clk: in  std_logic;
+        rst: in  std_logic;
+        filter: in integer range 0 to 31;
+        addressZ: in integer range 0 to 2;
+
+        output: out signed(7 downto 0)
     );
-    
     end component;
     
+    signal counterX, counterY, counterZ: integer range 0 to 4;
+    signal counterFilter: integer range 0 to 31;
     
-    	
-    signal topWeights: MAC_weights;
-    signal topInputs: MAC_inputs;
-    signal topResult: MAC_result;
-    
-    signal counter: signed(7 downto 0);
-    
-    signal ledd: std_logic;
+
+   
 begin
     
     
-    multiplier_inst: multiplier
-        port map (
-            clk => clk,
-            SW  => SW,
-            LED => LED
-        );
-
-
     process(clk)
     begin
         if rising_edge(clk) then
-        counter <= counter+1;
+            
+            counterZ <= counterZ + 1;
+            
+            if counterZ = 2 then
+                counterZ <= 0;
+                counterY <= counterY + 1;
+                if counterY = 2 then
+                    counterY <= 0;
+                    counterX <= counterX + 1;
+                    
+                    if counterX = 3 then
+                        counterX <= 0;
+                        CounterFilter <= CounterFilter + 1;
+                        
+                        if CounterFilter = 31 then
+                            counterFilter <= 0;
+                        end if;
+                    end if;
+                end if;
+            end if;
         end if;
     end process;
 
-	fill: for I in 0 to 24 generate
-		topWeights(I) <= to_signed(I,8) + counter ;
-		topInputs(I) <= to_signed(I,16)+ counter ;
-	end generate fill;
-	
-	--    fill: for I in 0 to 24 generate
-    --        weight(i) <= to_signed(I,8) + counter;
-    --            neurons(i) <= to_signed(I*2,16) + counter;
-    --    end generate fill;
-	
-	ledd <= topResult(15);
-	MAC1: MAC
-		port map(
-			clk     => clk,
-			rst     => '0',
-			weight  => topweights,
-			neurons => topInputs,
-			results => topResult
-		);
-		
-		topResults <= topResult;
 
+
+    weightsRom_inst: weightsRom2
+        generic map(
+            addressX => 0,
+            addressY => 0
+        )
+        port map(
+            clk     => clk,
+            rst     => '0',
+            
+            filter => counterFilter,
+            addressZ=> counterZ,
+            output => topResults(15 downto 8)
+        );
+        
+    weightsRom_inst2: weightsRom2
+            generic map(
+                addressX => 1,
+                addressY => 0
+            )
+            port map(
+                clk     => clk,
+                rst     => '0',
+                
+                filter => counterFilter,
+                addressZ=> counterZ,
+                output => topResults(7 downto 0)
+            );
     
 end architecture;

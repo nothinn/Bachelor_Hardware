@@ -1,0 +1,60 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.NUMERIC_STD.all;
+
+library std;
+use std.textio.all;
+
+entity tb_resultRam is
+end entity;
+
+architecture rtl_sim of tb_resultRam is
+
+constant depth_size: integer := ;
+constant size: integer := ;
+constant NrOfInputs: integer := ;
+
+constant CLK_PERIOD: time := 10 ns;
+signal clk: std_logic;
+signal ena: std_logic;
+signal wea: std_logic;
+signal depth: integer range 0 to depth_size - 1;
+signal addressX: integer range 0 to size - 1;
+signal addressY: integer range 0 to size - 1;
+signal dia: std_logic_vector(16 * NrOfInputs - 1 downto 0);
+signal doa: std_logic_vector(25 * 16 - 1 downto 0);
+
+begin
+
+resultRam_inst: entity work.resultRam
+generic map (
+        depth_size => depth_size,
+        size       => size,
+        NrOfInputs => NrOfInputs
+    )
+    port map (
+        clk        => clk,
+        ena        => ena,
+        wea        => wea,
+        depth      => depth,
+        addressX   => addressX,
+        addressY   => addressY,
+        dia        => dia,
+        doa        => doa
+    );
+
+stimuli_p: process is
+begin
+wait;
+end process;
+
+clock_p: process is
+begin
+clk <= '0';
+wait for CLK_PERIOD / 2;
+clk <= '1';
+wait for CLK_PERIOD / 2;
+end process;
+
+end architecture;
+

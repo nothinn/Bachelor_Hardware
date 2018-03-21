@@ -20,31 +20,21 @@ architecture RTL of MAC is
 
     
 
-    --signal weight : MAC_weights;
-    --signal neurons : mac_inputs;
+    --signal weightI : MAC_weights;
+    --signal neuronsI : mac_inputs;
 
 
 	signal DSP_outputs : MAC_DSP_outputs;
 
 	signal result : signed(15 downto 0);
-	
 
-  --  signal counter: signed(7 downto 0);
 
 begin
-
-
-
---    fill: for I in 0 to 24 generate
---        weight(i) <= to_signed(I,8) + counter;
---            neurons(i) <= to_signed(I*2,16) + counter;
---    end generate fill;
 
 
 	process(all)
 	begin
 		if rising_edge(clk) then
---		counter <= counter+1;
 			mult : for I in 0 to 24 loop
                 
 

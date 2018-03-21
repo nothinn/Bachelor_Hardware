@@ -271,3 +271,5 @@ __pycache__/
 *.jou
 /mnist_hardware/vivado_project
 /mnist_hardware/sim/work
+*.wlf
+*.bak
