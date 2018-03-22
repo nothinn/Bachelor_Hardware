@@ -7,10 +7,10 @@ entity MACFullFilter is
 	port(
 		clk           : in  std_logic;
 		rst           : in  std_logic;
-		start         : in  std_logic;
-		filtersLayers : in  unsigned(1 downto 0);
-		Filter        : in  unsigned(4 downto 0);
-		computed      : out std_logic;
+		start         : in  std_logic;  			--Starts an opperation
+		filtersLayers : in  unsigned(1 downto 0); 	-- Should be changed when weightROM han handle more layers then 3
+		Filter        : in  unsigned(4 downto 0);	-- Specify the filter to be used for computation computed
+		computed      : out std_logic;  			--Is set high when a result is ready
 		result        : out MAC_result
 	);
 end entity MACFullFilter;
@@ -22,12 +22,12 @@ architecture RTL of MACFullFilter is
 	signal wAddrY : wAddrArray;
 
 	signal currentLayer, nextCurrentLayer : unsigned(1 downto 0);
-	signal layerResReg, nextLayerResReg : MAC_result;
+	signal layerResReg, nextLayerResReg   : MAC_result; -- Register that hold the result, which also hold the intermediate result after every layer og the filter
 
-	signal inputs             : MAC_inputs;
+	signal inputs             : MAC_inputs;	
 	signal weights            : MAC_weights;
-	signal macRes, mux1, mux2 : MAC_result;
-	signal setMux1, setMux2   : std_logic;
+	signal macRes, mux1, mux2 : MAC_result;		-- Signals for the output system, consisting of two multiplexers an adder and a the layerResReg
+	signal setMux1, setMux2   : std_logic;		-- Signals controlling the multiplexers above
 
 	component MAC
 		port(
@@ -39,7 +39,7 @@ architecture RTL of MACFullFilter is
 		);
 	end component MAC;
 
-	component weightsRom
+	component weightsRom 
 		port(
 			clk      : in  std_logic;
 			rst      : in  std_logic;
@@ -54,7 +54,7 @@ architecture RTL of MACFullFilter is
 begin
 	result <= layerResReg;
 
-	MAC1 : MAC
+	MAC1 : MAC 
 		port map(
 			clk     => clk,
 			rst     => rst,
@@ -64,7 +64,7 @@ begin
 		);
 
 	makeROMs : for I in 0 to 24 generate
-		weightsROM1 : weightsRom
+		weightsROM1 : weightsRom -- 25 copies of the wieght ROM. One for eache of the DSP's in MAC
 			port map(
 				clk      => clk,
 				rst      => rst,
@@ -80,70 +80,68 @@ begin
 	begin
 		for I in 0 to 4 loop
 			for J in 0 to 4 loop
-				wAddrX(I*5 + J) <= to_unsigned(J, 3);
-				wAddrY(I*5 + J) <= to_unsigned(I, 3);
-				inputs(I*5 + J) <= X"0002";
+				wAddrX(I*5 + J) <= to_unsigned(J, 3); -- Assigning addresses for the 25 weights.
+				wAddrY(I*5 + J) <= to_unsigned(I, 3); 
+				inputs(I*5 + J) <= X"0002";			  -- A temperary value that should be changed when the Input RAM has been written
 			end loop;
 		end loop;
 	end process SetAddr;
 
-	makeMuxLogic : process(all)
+	makeMuxLogic : process(all) -- Describes how the mux should opperate (might be more readable if it was merged into the "controlLogic" process
 	begin
-		mux1 <= X"0000";
-		mux2 <= X"0000";
+		mux1            <= X"0000";
+		mux2            <= X"0000";
 		nextLayerResReg <= mux1 + mux2;
-				
+
 		case setMux1 is
-			when '1' => 
+			when '1' =>
 				mux1 <= macRes;
-			when others => 
+			when others =>
 				mux1 <= X"0000";
 		end case;
-		
+
 		case setMux2 is
-			when '1' => 
+			when '1' =>
 				mux2 <= layerResReg;
-			when others => 
+			when others =>
 				mux2 <= X"0000";
 		end case;
-		
-		
+
 	end process makeMuxLogic;
-	
-	ControlLogic : process(all)
+
+	ControlLogic : process(all) -- Describes the logic of output system
 	begin
 		case start is
 			when '1' =>
-				if (currentLayer) = filtersLayers then
+				if (currentLayer) = filtersLayers then -- The result has been computed and whe hold the value in the layersResReg, be setting the mux accordinly
 					nextCurrentLayer <= currentLayer;
-					setMux1 <= '0';
-					setMux2 <= '1';
-					computed <= '1';
+					setMux1          <= '0';
+					setMux2          <= '1';
+					computed         <= '1';
 				else
-					nextCurrentLayer <= currentLayer+1;
-					setMux1 <= '1';
-					setMux2 <= '1';
-					computed <= '0';
+					nextCurrentLayer <= currentLayer + 1; -- We are not yet finished and we should keep adding intermediate result to LayerResReg
+					setMux1          <= '1';
+					setMux2          <= '1';
+					computed         <= '0';
 				end if;
-			when others => 
-				setMux1 <= '0';
-				setMux2 <= '0';
+			when others =>								-- Start is not high and we should set the counter (CurrentLayer register) and LayerResReg to 0
+				setMux1          <= '0';
+				setMux2          <= '0';
 				nextCurrentLayer <= "00";
-				computed <= '0';
+				computed         <= '0';
 		end case;
-		
-		
+
 	end process ControlLogic;
-	
-	name : process (clk, rst) is
+
+	registerTransfer : process(clk, rst) is
 	begin
 		if rst = '1' then
 			currentLayer <= "00";
-			layerResReg <= X"0000";
+			layerResReg  <= X"0000";
 		elsif rising_edge(clk) then
 			currentLayer <= nextCurrentLayer;
-			layerResReg <= nextLayerResReg;
+			layerResReg  <= nextLayerResReg;
 		end if;
-	end process name;
-	
+	end process registerTransfer;
+
 end architecture RTL;
