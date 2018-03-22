@@ -10,6 +10,7 @@ entity MACFullFilter is
 		start         : in  std_logic;
 		filtersLayers : in  unsigned(1 downto 0);
 		Filter        : in  unsigned(4 downto 0);
+        input         : in  MAC_inputs;
 		computed      : out std_logic;
 		result        : out MAC_result
 	);
@@ -37,22 +38,36 @@ architecture RTL of MACFullFilter is
 			neurons : in  MAC_inputs;
 			results : out MAC_result
 		);
-	end component MAC;
+end component MAC;
 
-	component weightsRom
-		port(
-			clk      : in  std_logic;
-			rst      : in  std_logic;
-			filter   : in  integer range 0 to 31;
-			addressX : in  integer range 0 to 4;
-			addressY : in  integer range 0 to 4;
-			addressZ : in  integer range 0 to 2;
-			output   : out signed(7 downto 0)
-		);
-	end component weightsRom;
+component weightsRom is
+    generic (
+        addressX :  integer range 0 to 4;
+        addressY :  integer range 0 to 4
+    );
+    port (
+        clk      : in std_logic;
+        rst      : in std_logic;
+        filter   : in integer range 0 to 31;
+        addressZ : in integer range 0 to 2;
+        output   : out signed(7 downto 0)
+    );
+end component;
+
+
+component FirstRom is
+    port (
+        clk      : in std_logic;
+        addressX : in integer range 0 to 27;
+        addressY : in integer range 0 to 27;
+        addressZ : in integer range 0 to 2;
+        output   : out unsigned(15 downto 0)
+    );
+end component;
 
 begin
 	result <= layerResReg;
+
 
 	MAC1 : MAC
 		port map(
@@ -64,25 +79,28 @@ begin
 		);
 
 	makeROMs : for I in 0 to 24 generate
-		weightsROM1 : weightsRom
-			port map(
-				clk      => clk,
-				rst      => rst,
-				filter   => to_integer(Filter),
-				addressX => to_integer(wAddrX(I)),
-				addressY => to_integer(wAddrY(I)),
-				addressZ => to_integer(currentLayer),
-				output   => weights(I)
-			);
+        weightsRom_inst: weightsRom
+            generic map (
+                addressX => to_integer(wAddrX(I)),
+                addressY => to_integer(wAddrY(I))
+            )
+            port map (
+                clk      => clk,
+                rst      => rst,
+                filter   => filter,
+                addressZ => to_integer(currentLayer),
+                output   => weights(I)
+            );
 	end generate makeROMs;
 
+    inputs <= input;
+    
 	SetAddr : process(all)
 	begin
 		for I in 0 to 4 loop
 			for J in 0 to 4 loop
 				wAddrX(I*5 + J) <= to_unsigned(J, 3);
 				wAddrY(I*5 + J) <= to_unsigned(I, 3);
-				inputs(I*5 + J) <= X"0002";
 			end loop;
 		end loop;
 	end process SetAddr;

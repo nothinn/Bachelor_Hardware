@@ -14,8 +14,13 @@ architecture RTL of tb_MACFullFilter is
 	signal start         : std_logic := '0';
 	signal filtersLayers : unsigned(1 downto 0) := "10";
 	signal Filter        : unsigned(4 downto 0) := "00000";
+    signal input         : MAC_inputs;
 	signal computed      : std_logic;
 	signal result        : MAC_result;
+    
+    signal addressX      : integer range 0 to 27;
+    signal addressY      : integer range 0 to 27;
+    signal addressZ      : integer range 0 to 2;
 
 begin
 	clock_driver : process
@@ -25,6 +30,19 @@ begin
 		clk <= '1';
 		wait for period / 2;
 	end process clock_driver;
+    
+    gen_rom: for i in 0 to 24 generate
+        FirstRom_inst: entity work.FirstRom
+            port map (
+                clk      => clk,
+                addressX => addressX,
+                addressY => addressY,
+                addressZ => addressZ,
+                output   => input(I)
+            );
+    end generate;
+
+
 
 	inst : entity work.MACFullFilter
 		port map(
@@ -33,6 +51,7 @@ begin
 			start         => start,
 			filtersLayers => filtersLayers,
 			Filter        => Filter,
+            input         => input,
 			computed      => computed,
 			result        => result
 		);
@@ -43,6 +62,10 @@ begin
 		filterslayers <= "10";
 		Filter        <= "00000";
 		rst           <= '1';
+        
+        addressX <= 0;
+        addressY <= 0;
+        addressZ <= 0;
 		
 		wait for 20 ns;
 
