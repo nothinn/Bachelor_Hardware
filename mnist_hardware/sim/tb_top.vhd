@@ -110,6 +110,8 @@ begin
     stimuli_p: process is
     begin
         
+        
+        
         wait until rising_edge(clk);
         
         
