@@ -16,6 +16,10 @@
 *vivado_project/ #Project generated and files with this.
 V3S_project/
 
+#Sigasi, written by Anthon
+Sigasi/
+mnist_hardware/src/.project
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
