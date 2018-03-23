@@ -14,27 +14,27 @@ entity tb_top is
 end entity;
 
 architecture rtl of tb_top is
-    component weightsRom is
-        generic (
-            addressX :  integer range 0 to 4;
-            addressY :  integer range 0 to 4
-        );
+    
+    component FirstRom is
         port (
             clk      : in std_logic;
-            rst      : in std_logic;
-            filter   : in integer range 0 to 31;
+            addressX : in integer range 0 to 27;
+            addressY : in integer range 0 to 27;
             addressZ : in integer range 0 to 2;
-            output   : out signed(7 downto 0)
+            output   : out unsigned(15 downto 0)
         );
     end component;
-   
-    component MAC is
+    
+    component MACFullFilter is
         port (
-            clk     : in std_logic;
-            rst     : in std_logic;
-            weight  : in MAC_weights;
-            neurons : in MAC_inputs;
-            results : out MAC_result
+            clk           : in std_logic;
+            rst           : in std_logic;
+            start         : in std_logic;
+            filtersLayers : in unsigned(1 downto 0);
+            Filter        : in unsigned(4 downto 0);
+            input         : in MAC_inputs;
+            computed      : out std_logic;
+            result        : out MAC_result
         );
     end component;
     
@@ -70,36 +70,26 @@ architecture rtl of tb_top is
     variable filter: integer range 0 to 31;
     variable addressZ: integer range 0 to 2;
     
+    
+    signal start: std_logic := '0'; 
+    
 begin
     
     
-    GEN_ROM_X: for X in 0 to 4 generate
-        GEN_ROM_Y: for Y in 0 to 4 generate
-            
-            weightsRom_inst: weightsRom
-                generic map (
-                    addressX => X,
-                    addressY => Y
-                )
-                port map (
-                    clk      => clk,
-                    rst      => rst,
-                    filter   => filter,
-                    addressZ => addressZ,
-                    output   => input_weight_mac(x*5+y)
-                );
-        end generate;
-    end generate;
-    
-    GEN_MAC: for I in 0 to 24 generate
-        MAC_inst: MAC
+   
+    GEN_MACFull: for I in 0 to 24 generate
+        MACFullFilter_inst: MACFullFilter
             port map (
-                clk     => clk,
-                rst     => rst,
-                weight  => input_weight_mac,
-                neurons => input_mac,
-                results => output_mac(I)
+                clk           => clk,
+                rst           => rst,
+                start         => start,
+                filtersLayers => filtersLayers,
+                Filter        => Filter,
+                input         => input,
+                computed      => computed,
+                result        => result
             );
+
     end generate;
     
     
