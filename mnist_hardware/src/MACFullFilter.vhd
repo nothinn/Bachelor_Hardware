@@ -103,57 +103,31 @@ begin
 
 	makeMuxLogic : process(all)
 	begin
-		mux1            <= X"0000";
-		mux2            <= X"0000";
-		nextLayerResReg <= mux1 + mux2;
+		newCalcMux      <= X"0000";
+		holdMux         <= X"0000";
+		nextLayerResReg <= newCalcMux + holdMux;
 
-		case setMux1 is
+		case hold is
 			when '1' =>
-				mux1 <= macRes;
+				holdMux <= X"0000";
 			when others =>
-				mux1 <= X"0000";
+				holdMux <= macRes; 
 		end case;
 
-		case setMux2 is
+		case newCalc is
 			when '1' =>
-				mux2 <= layerResReg;
+				newCalcMux <= X"0000";
 			when others =>
-				mux2 <= X"0000";
+				newCalcMux <= layerResReg;
 		end case;
 
 	end process makeMuxLogic;
 
-	ControlLogic : process(all)
-	begin
-		case start is
-			when '1' =>
-				if (currentLayer) = filtersLayers then
-					nextCurrentLayer <= currentLayer;
-					setMux1          <= '0';
-					setMux2          <= '1';
-					computed         <= '1';
-				else
-					nextCurrentLayer <= currentLayer + 1;
-					setMux1          <= '1';
-					setMux2          <= '1';
-					computed         <= '0';
-				end if;
-			when others =>
-				setMux1          <= '0';
-				setMux2          <= '0';
-				nextCurrentLayer <= "00";
-				computed         <= '0';
-		end case;
-
-	end process ControlLogic;
-
 	name : process(clk, rst) is
 	begin
 		if rst = '1' then
-			currentLayer <= "00";
 			layerResReg  <= X"0000";
 		elsif rising_edge(clk) then
-			currentLayer <= nextCurrentLayer;
 			layerResReg  <= nextLayerResReg;
 		end if;
 	end process name;
