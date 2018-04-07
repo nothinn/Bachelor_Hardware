@@ -48,7 +48,7 @@ begin
 		newCalc <= '0';
 		rst <= '1';
 		
-		wait for 20ns;
+		wait for 20 ns;
 		
 		rst <= '0';
 
