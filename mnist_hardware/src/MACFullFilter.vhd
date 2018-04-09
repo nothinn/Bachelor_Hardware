@@ -24,9 +24,9 @@ architecture RTL of MACFullFilter is
 
 	signal macRes : MAC_output;
 
-	signal AddResToSaturationCheck, newCalcMux, holdMux : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + (fixInputright - fixWeightright - inferredWeightBits) + 5 + 1 - 1) downto 0);
+	signal AddResToSaturationCheck, newCalcMux, holdMux : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 5 + 1 - 1) downto 0);
 
-	signal concatRight : signed(fixWeightright + inferredWeightBits + (fixInputright - fixWeightright - inferredWeightBits) - 1 downto 0);
+	signal concatRight : signed(fixWeightright + inferredWeightBits - 1 downto 0);
 	signal concatLeft  : signed(fixWeightleft + 5 - 1 downto 0);
 
 	component MAC
@@ -130,9 +130,9 @@ begin
 		--check for saturation
 		case AddResToSaturationCheck(AddResToSaturationCheck'length - 1 downto AddResToSaturationCheck'length - 5 - fixWeightleft  - 1) is -- first -1 to have the extra bit possiple by the addition. secind -1 To look at the sign aswell
 			when (others => '1') =>     -- the result has not meet negative saturation
-				nextLayerResReg <= AddResToSaturationCheck(AddResToSaturationCheck'length - 5 - fixWeightleft - 1 - 1 downto fixWeightright + inferredWeightBits + (fixInputright - fixWeightright - inferredWeightBits));
+				nextLayerResReg <= AddResToSaturationCheck(AddResToSaturationCheck'length - 5 - fixWeightleft - 1 - 1 downto fixWeightright + inferredWeightBits);
 			when (others => '0') =>     -- the result has not meet posative saturation
-				nextLayerResReg <= AddResToSaturationCheck(AddResToSaturationCheck'length - 5 - fixWeightleft - 1 - 1 downto fixWeightright + inferredWeightBits + (fixInputright - fixWeightright - inferredWeightBits));
+				nextLayerResReg <= AddResToSaturationCheck(AddResToSaturationCheck'length - 5 - fixWeightleft - 1 - 1 downto fixWeightright + inferredWeightBits);
 			when others =>              -- saturation detected
 				if AddResToSaturationCheck(AddResToSaturationCheck'length - 1) = '0' then -- "overflow" saturation detected
 					nextLayerResReg <= '0' & "111111111111111"; -- highest possiple number is passed
