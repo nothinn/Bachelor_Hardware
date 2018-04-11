@@ -35,7 +35,6 @@ end entity;
 
 architecture rtl of resultRam is
     
-    
     component addressTranslator is
         generic (
             depth_size :  integer := 32;

@@ -20,6 +20,7 @@ architecture RTL of MAC is
 	--signal weightI : MAC_weights;
 	--signal neuronsI : mac_inputs;
 
+
 	signal fullWeights     : Weight_w_inferedbits_resized;
 	signal inferredBitsPos : signed(inferredWeightBits - 1 downto 0);
 	signal inferredBitsNeg : signed(inferredWeightBits - 1 downto 0);

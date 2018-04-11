@@ -11,15 +11,13 @@ entity FirstRom is
         addressY: in integer range 0 to 27;
         addressZ: in integer range 0 to 2;
 
-        output: out unsigned(15 downto 0)
+        output: out signed(15 downto 0)
     );
 end entity;
 
 architecture rtl of FirstRom is
 
 begin
-
-
     process(all)
     begin
         if rising_edge(clk) then 

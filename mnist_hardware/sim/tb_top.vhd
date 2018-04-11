@@ -11,6 +11,7 @@ library std;
 
 
 entity tb_top is 
+
 end entity;
 
 architecture rtl of tb_top is
@@ -21,20 +22,20 @@ architecture rtl of tb_top is
             addressX : in integer range 0 to 27;
             addressY : in integer range 0 to 27;
             addressZ : in integer range 0 to 2;
-            output   : out unsigned(15 downto 0)
+            output   : out signed(15 downto 0)
         );
     end component;
-    
+
     component MACFullFilter is
         port (
-            clk           : in std_logic;
-            rst           : in std_logic;
-            start         : in std_logic;
-            filtersLayers : in unsigned(1 downto 0);
-            Filter        : in unsigned(4 downto 0);
-            input         : in MAC_inputs;
-            computed      : out std_logic;
-            result        : out MAC_result
+            clk     : in std_logic;
+            rst     : in std_logic;
+            depth   : in unsigned(1 downto 0);
+            Filter  : in unsigned(4 downto 0);
+            input   : in MAC_inputs;
+            hold    : in std_logic;
+            newCalc : in std_logic;
+            result  : out MAC_result
         );
     end component;
     
@@ -57,55 +58,127 @@ architecture rtl of tb_top is
         );
     end component;
     
+    component fsm is
+        port (
+            clk      : in std_logic;
+            rst      : in std_logic;
+            start    : in std_logic;
+            hold     : out std_logic;
+            new_calc : out std_logic;
+            x        : out integer;
+            y        : out integer;
+            depth    : out integer;
+            done     : out std_logic
+        );
+    end component;
+    
     
     constant CLK_PERIOD: time := 10 ns;
     signal clk: std_logic;
     signal rst: std_logic:='0';
     
     
-    variable input_mac: MAC_inputs;
-    variable input_weight_mac: MAC_weights;
-    variable output_mac: ram_input(7 downto 0);
+    signal input_mac: MAC_inputs;
+    --signal input_weight_mac: MAC_weights;
+    --signal output_mac: ram_input(7 downto 0);
     
-    variable filter: integer range 0 to 31;
-    variable addressZ: integer range 0 to 2;
+    signal filter: unsigned(4 downto 0);
+
+    signal addressX: integer;
+    signal addressY: integer;
+    signal addressZ: integer range 0 to 31;
+    
+    signal hold, newCalc, done: std_logic;
     
     
     signal start: std_logic := '0'; 
     
+    signal depth: unsigned(1 downto 0);
+    
+    
+    signal MAC_ARRAY : ram_input(7 downto 0);
+    
+    signal en_ram: std_logic:='0';
+    signal we_ram: std_logic:='0';
 begin
     
     
-   
-    GEN_MACFull: for I in 0 to 24 generate
-        MACFullFilter_inst: MACFullFilter
+    gen_rom: for i in 0 to 24 generate
+        FirstRom_inst: FirstRom
             port map (
-                clk           => clk,
-                rst           => rst,
-                start         => start,
-                filtersLayers => filtersLayers,
-                Filter        => Filter,
-                input         => input,
-                computed      => computed,
-                result        => result
+                clk      => clk,
+                addressX => addressX,
+                addressY => addressY,
+                addressZ => addressZ,
+                output   => input_mac(i)
             );
-
     end generate;
     
     
     
+    
 
+    depth <=  to_unsigned(addressZ,depth'length);
+   
+    GEN_MACFull: for I in 0 to 7 generate
+        MACFullFilter_inst: MACFullFilter
+            port map (
+                clk     => clk,
+                rst     => rst,
+                depth   =>depth,
+                Filter  => filter,
+                input   => input_mac,
+                hold    => hold,
+                newCalc => newCalc,
+                result  => MAC_array(i)
+            );
+    end generate;
+    
+    resultRam_inst: resultRam
+        generic map (
+            depth_size => 32,
+            size       => 5,
+            ram_size   => 28,
+            NrOfInputs => 8
+        )
+        port map (
+            clk        => clk,
+            ena        => en_ram,
+            wea        => we_ram,
+            depth      => addressZ,
+            addressX   => addressX,
+            addressY   => addressY,
+            dia        => mac_array,
+            doa        => open
+        );
+    
+    fsm_inst: fsm
+        port map (
+            clk      => clk,
+            rst      => rst,
+            start    => start,
+            hold     => hold,
+            new_calc => newCalc,
+            x        => addressX,
+            y        => addressY,
+            depth    => addressZ,
+            done     => done
+        );
+
+
+    
         
 
     stimuli_p: process is
     begin
         
+        wait until rising_edge(clk) and rst = '0';
         
+        start <= '1';
         
-        wait until rising_edge(clk);
+        wait until rising_edge(clk) and done = '1';
         
-        
-        
+        report "DONE" severity failure;    
         
     end process;
     

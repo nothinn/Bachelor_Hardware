@@ -23,8 +23,6 @@ end entity;
 architecture rtl of weightsRom is
 
 begin
-
-
     process(all)
     begin
         if rising_edge(clk) then

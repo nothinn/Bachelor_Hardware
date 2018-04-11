@@ -27,6 +27,7 @@ architecture RTL of MACFullFilter is
 	signal AddResToSaturationCheck, newCalcMux, holdMux : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 5 + 1 - 1) downto 0);
 
 	signal concatRight : signed(fixWeightright + inferredWeightBits - 1 downto 0);
+	
 	signal concatLeft  : signed(fixWeightleft + 5 - 1 downto 0);
 
 	component MAC
