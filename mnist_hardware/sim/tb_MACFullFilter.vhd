@@ -44,17 +44,19 @@ begin
 
 
 
-	inst : entity work.MACFullFilter
-		port map(
-			clk           => clk,
-			rst           => rst,
-			start         => start,
-			filtersLayers => filtersLayers,
-			Filter        => Filter,
-            input         => input,
-			computed      => computed,
-			result        => result
-		);
+	MACFullFilter_inst: entity work.MACFullFilter
+        port map (
+            clk     => clk,
+            rst     => rst,
+            depth   => depth,
+            Filter  => Filter,
+            input   => input,
+            hold    => hold,
+            newCalc => newCalc,
+            result  => result
+        );
+
+
 
 	stim : process
 	begin
