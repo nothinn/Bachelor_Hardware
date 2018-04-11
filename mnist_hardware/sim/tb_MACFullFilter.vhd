@@ -8,19 +8,15 @@ entity tb_MACFullFilter is
 end entity tb_MACFullFilter;
 
 architecture RTL of tb_MACFullFilter is
-	signal clk           : std_logic;
-	constant period      : time := 10 ns;
-	signal rst           : std_logic := '0';
-	signal start         : std_logic := '0';
-	signal filtersLayers : unsigned(1 downto 0) := "10";
-	signal Filter        : unsigned(4 downto 0) := "00000";
-    signal input         : MAC_inputs;
-	signal computed      : std_logic;
-	signal result        : MAC_result;
-    
-    signal addressX      : integer range 0 to 27;
-    signal addressY      : integer range 0 to 27;
-    signal addressZ      : integer range 0 to 2;
+	signal clk      : std_logic;
+	constant period : time                 := 10 ns;
+	signal rst      : std_logic            := '0';
+	signal Filter   : unsigned(4 downto 0) := "00000";
+	signal input    : MAC_inputs;
+	signal result   : MAC_result;
+	signal depth    : unsigned(1 downto 0);
+	signal hold     : std_logic;
+	signal newCalc  : std_logic;
 
 begin
 	clock_driver : process
@@ -30,56 +26,78 @@ begin
 		clk <= '1';
 		wait for period / 2;
 	end process clock_driver;
-    
-    gen_rom: for i in 0 to 24 generate
-        FirstRom_inst: entity work.FirstRom
-            port map (
-                clk      => clk,
-                addressX => addressX,
-                addressY => addressY,
-                addressZ => addressZ,
-                output   => input(I)
-            );
-    end generate;
 
+	instMACFF : entity work.MACFullFilter
+		port map(
+			clk     => clk,
+			rst     => rst,
+			depth   => depth,
+			Filter  => Filter,
+			input   => input,
+			hold    => hold,
+			newCalc => newCalc,
+			result  => result
+		);
 
-
-	MACFullFilter_inst: entity work.MACFullFilter
-        port map (
-            clk     => clk,
-            rst     => rst,
-            depth   => depth,
-            Filter  => Filter,
-            input   => input,
-            hold    => hold,
-            newCalc => newCalc,
-            result  => result
-        );
-
-
-
-	stim : process
+	
+	testProcess : process
 	begin
-		start         <= '1';
-		filterslayers <= "10";
-		Filter        <= "00000";
-		rst           <= '1';
-        
-        addressX <= 0;
-        addressY <= 0;
-        addressZ <= 0;
+		wait for 20 ns;
+		depth   <= "00";
+		hold    <= '0';
+		newCalc <= '0';
+		rst <= '1';
 		
 		wait for 20 ns;
+		
+		rst <= '0';
 
 		wait until rising_edge(clk);
+		for I in 0 to 24 loop
+			input(I) <= "0000000000000000"; -- a input of 0 should give 0 as output
+		end loop;
+		
+		wait for 50 ns;
+		
+		rst <= '1';
+		
+		wait for 10 ns;
 		
 		rst <= '0';
 		
-		wait for 100 ns;
+		wait until rising_edge(clk);
+		for I in 0 to 24 loop
+			input(I) <= "0000001000000000"; -- 0.5 We should not have hit saturation
+		end loop;
+		
+		
+		wait for 50 ns;
+		
+		rst <= '1';
+		
+		wait for 10 ns;
+		
+		rst <= '0';
 		
 		wait until rising_edge(clk);
-		start <= '0';
-		wait;
+		for I in 0 to 24 loop
+			input(I) <= "0111111111111111"; -- 32.99xxx We should hit saturation
+		end loop;
 		
-	end process stim;
+		wait for 50 ns;
+		
+		rst <= '1';
+		
+		wait for 10 ns;
+		
+		rst <= '0';
+		
+		wait until rising_edge(clk);
+		for I in 0 to 24 loop
+			input(I) <= "1000000000000000"; -- -32.99xxx We should hit saturation
+		end loop;
+		
+		wait for 50 ns;
+	end process testProcess;
+
 end architecture RTL;

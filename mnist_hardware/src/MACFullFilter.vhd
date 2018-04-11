@@ -17,16 +17,17 @@ entity MACFullFilter is
 end entity MACFullFilter;
 
 architecture RTL of MACFullFilter is
-	type wAddrArray is array (24 downto 0) of unsigned(2 downto 0);
-
-	signal wAddrX : wAddrArray;
-	signal wAddrY : wAddrArray;
-
 	signal layerResReg, nextLayerResReg : MAC_result;
 
-	signal inputs                      : MAC_inputs;
-	signal weights                     : MAC_weights;
-	signal macRes, newCalcMux, holdMux : MAC_result;
+	signal inputs  : MAC_inputs;
+	signal weights : MAC_weights;
+
+	signal macRes : MAC_output;
+
+	signal AddResToSaturationCheck, newCalcMux, holdMux : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 5 + 1 - 1) downto 0);
+
+	signal concatRight : signed(fixWeightright + inferredWeightBits - 1 downto 0);
+	signal concatLeft  : signed(fixWeightleft + 5 - 1 downto 0);
 
 	component MAC
 		port(
@@ -34,7 +35,7 @@ architecture RTL of MACFullFilter is
 			rst     : in  std_logic;
 			weight  : in  MAC_weights;
 			neurons : in  MAC_inputs;
-			results : out MAC_result
+			results : out MAC_output
 		);
 	end component MAC;
 
@@ -74,51 +75,70 @@ begin
 			results => macRes
 		);
 
-	makeROMs : for I in 0 to 24 generate
-		weightsRom_inst : weightsRom
-			generic map(
-				addressX => to_integer(wAddrX(I)),
-				addressY => to_integer(wAddrY(I))
-			)
-			port map(
-				clk      => clk,
-				rst      => rst,
-				filter   => to_integer(filter),
-				addressZ => to_integer(depth),
-				output   => weights(I)
-			);
-	end generate makeROMs;
+	makeROMsy : for I in 0 to 4 generate
+		makeROMsx : for J in 0 to 4 generate
+			weightsRom_inst : weightsRom
+				generic map(
+					addressX => J,
+					addressY => I
+				)
+				port map(
+					clk      => clk,
+					rst      => rst,
+					filter   => to_integer(filter),
+					addressZ => to_integer(depth),
+					output   => weights(I*5 + J)
+				);
+		end generate makeROMsx;
+	end generate makeROMsy;
 
 	inputs <= input;
 
-	SetAddr : process(all)
-	begin
-		for I in 0 to 4 loop
-			for J in 0 to 4 loop
-				wAddrX(I*5 + J) <= to_unsigned(J, 3);
-				wAddrY(I*5 + J) <= to_unsigned(I, 3);
-			end loop;
-		end loop;
-	end process SetAddr;
-
 	makeMuxLogic : process(all)
 	begin
-		newCalcMux      <= X"0000";
-		holdMux         <= X"0000";
-		nextLayerResReg <= newCalcMux + holdMux;
-
+		newCalcMux              <= (others => '0');
+		holdMux                 <= (others => '0');
+		AddResToSaturationCheck <= newCalcMux + holdMux;
+		concatLeft              <= (others => '0');
+		concatRight             <= (others => '0');
 		case hold is
 			when '1' =>
-				holdMux <= X"0000";
+				holdMux <= (others => '0');
 			when others =>
-				holdMux <= macRes; 
+				if macRes(macRes'length - 1) = '0' then
+					holdMux <= '0' & macRes;
+				else
+					holdMux <= '1' & macRes;
+				end if;
 		end case;
 
 		case newCalc is
 			when '1' =>
-				newCalcMux <= X"0000";
+				newCalcMux <= (others => '0');
 			when others =>
-				newCalcMux <= layerResReg;
+				if layerResReg(layerResReg'length - 1) = '0' then
+					concatLeft <= (others => '0');
+					newCalcMux <= '0' & concatLeft & layerResReg & concatRight;
+				else
+					concatLeft <= (others => '1');
+					newCalcMux <= '1' & concatLeft & layerResReg & concatRight;
+				end if;
+
+				
+		end case;
+
+		--check for saturation
+		case AddResToSaturationCheck(AddResToSaturationCheck'length - 1 downto AddResToSaturationCheck'length - 5 - fixWeightleft  - 1) is -- first -1 to have the extra bit possiple by the addition. secind -1 To look at the sign aswell
+			when (others => '1') =>     -- the result has not meet negative saturation
+				nextLayerResReg <= AddResToSaturationCheck(AddResToSaturationCheck'length - 5 - fixWeightleft - 1 - 1 downto fixWeightright + inferredWeightBits);
+			when (others => '0') =>     -- the result has not meet posative saturation
+				nextLayerResReg <= AddResToSaturationCheck(AddResToSaturationCheck'length - 5 - fixWeightleft - 1 - 1 downto fixWeightright + inferredWeightBits);
+			when others =>              -- saturation detected
+				if AddResToSaturationCheck(AddResToSaturationCheck'length - 1) = '0' then -- "overflow" saturation detected
+					nextLayerResReg <= '0' & "111111111111111"; -- highest possiple number is passed
+				else
+					nextLayerResReg <= '1' & "000000000000000"; -- lowest possiple number is passed
+				end if;
 		end case;
 
 	end process makeMuxLogic;
@@ -126,9 +146,9 @@ begin
 	name : process(clk, rst) is
 	begin
 		if rst = '1' then
-			layerResReg  <= X"0000";
+			layerResReg <= X"0000";
 		elsif rising_edge(clk) then
-			layerResReg  <= nextLayerResReg;
+			layerResReg <= nextLayerResReg;
 		end if;
 	end process name;
 
