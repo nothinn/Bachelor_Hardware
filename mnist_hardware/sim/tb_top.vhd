@@ -68,6 +68,7 @@ architecture rtl of tb_top is
             x        : out integer;
             y        : out integer;
             depth    : out integer;
+            filter   : out integer;
             done     : out std_logic
         );
     end component;
@@ -100,6 +101,8 @@ architecture rtl of tb_top is
     
     signal en_ram: std_logic:='0';
     signal we_ram: std_logic:='0';
+    
+    signal pre_filter: integer;
 begin
     
     
@@ -162,10 +165,11 @@ begin
             x        => addressX,
             y        => addressY,
             depth    => addressZ,
+            filter   => pre_filter,
             done     => done
         );
 
-
+    filter <= to_unsigned(pre_filter,5);
     
         
 

@@ -12,6 +12,7 @@ entity fsm is
         x : out integer;
         y : out integer;
         depth: out integer;
+        filter: out integer;
         done: out std_logic
         
     );
@@ -34,7 +35,7 @@ architecture rtl of fsm is
     signal new_calcint, new_calcint_next: std_logic;
     
 begin
-    
+    filter <= count;
     x <= xint;
     y <= yint;
     depth <= depthin;
@@ -44,6 +45,9 @@ begin
     process(all)
     begin
         state_next <= state;
+        xint_next <= xint;
+        yint_next <= yint;
+        depthin_next <= depthin;
         done <= '0';
         new_calcint_next <= '0';
         count_next <= count;
@@ -70,19 +74,21 @@ begin
                 
                 depthin_next <= depthin +1 ;
                 
-                if depth = 32 then
+                if depth = 3-1 then
                     state_next <= save;
+                    depthin_next <= 0;
                 end if;
 
             when save =>
                 
                 count_next <= count + 8;
                 
-                if count < 32 then
+                if count + 8 < 32 then
                     state_next <= prep;
                 else
-                    if xint = XMAX then
-                        if yint = YMAX then
+                    count_next <= 0;
+                    if xint = XMAX-1 then
+                        if yint = YMAX-1 then
                             state_next <= finished;
                         else
                             xint_next <= 0;
