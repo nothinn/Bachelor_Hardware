@@ -103,33 +103,45 @@ architecture rtl of tb_top is
     signal we_ram: std_logic:='0';
     
     signal pre_filter: integer;
+    
+    
+    type filter_array is array (7 downto 0) of unsigned(4 downto 0);
+    
+    signal filter_input : filter_array;
+    
+    
 begin
     
     
-    gen_rom: for i in 0 to 24 generate
-        FirstRom_inst: FirstRom
+    gen_romX: for x in -2 to 2 generate
+        gen_romY: for y in -2 to 2 generate
+            FirstRom_inst: FirstRom
             port map (
                 clk      => clk,
-                addressX => addressX,
-                addressY => addressY,
+                addressX => (addressX + x),
+                addressY => (addressY + y),
                 addressZ => addressZ,
-                output   => input_mac(i)
+                output   => input_mac((x+2) + (y+2)*5)
             );
+      end generate;
     end generate;
     
-    
-    
-    
-
     depth <=  to_unsigned(addressZ,depth'length);
+    
+    process(all)
+    begin
+        for i in 0 to 7 loop
+            filter_input(i) <= filter + to_unsigned(I,5);
+        end loop;
+    end process;
    
     GEN_MACFull: for I in 0 to 7 generate
         MACFullFilter_inst: MACFullFilter
             port map (
                 clk     => clk,
                 rst     => rst,
-                depth   =>depth,
-                Filter  => filter,
+                depth   => depth,
+                Filter  => filter_input(i),
                 input   => input_mac,
                 hold    => hold,
                 newCalc => newCalc,

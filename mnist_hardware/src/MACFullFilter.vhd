@@ -3,6 +3,15 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.types.all;
 
+--NOTER
+/*
+Ændre Fullfiltermac til at outputtet er 16 bit unsigned. (ReLu).
+
+Ændre saturation og padding til 17 bit, til at holde negative tal.
+
+Add bias før relu.
+*/
+
 entity MACFullFilter is
 	port(
 		clk     : in  std_logic;
@@ -29,6 +38,8 @@ architecture RTL of MACFullFilter is
 	signal concatRight : signed(fixWeightright + inferredWeightBits - 1 downto 0);
 	
 	signal concatLeft  : signed(fixWeightleft + 5 - 1 downto 0);
+    
+    signal newcalc_reg, hold_reg: std_logic;
 
 	component MAC
 		port(
@@ -102,7 +113,7 @@ begin
 		AddResToSaturationCheck <= newCalcMux + holdMux;
 		concatLeft              <= (others => '0');
 		concatRight             <= (others => '0');
-		case hold is
+		case hold_reg is
 			when '1' =>
 				holdMux <= (others => '0');
 			when others =>
@@ -113,7 +124,7 @@ begin
 				end if;
 		end case;
 
-		case newCalc is
+		case newCalc_reg is
 			when '1' =>
 				newCalcMux <= (others => '0');
 			when others =>
@@ -148,8 +159,12 @@ begin
 	begin
 		if rst = '1' then
 			layerResReg <= X"0000";
+            newcalc_reg <= '0';
+            hold_reg <= '0';
 		elsif rising_edge(clk) then
 			layerResReg <= nextLayerResReg;
+            newcalc_reg <= newcalc;
+            hold_reg <= hold;
 		end if;
 	end process name;
 
