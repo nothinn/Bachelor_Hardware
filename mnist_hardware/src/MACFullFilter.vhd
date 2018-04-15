@@ -26,21 +26,17 @@ entity MACFullFilter is
 end entity MACFullFilter;
 
 architecture RTL of MACFullFilter is
-	signal layerResReg, nextLayerResReg : MAC_result;
+	signal layerResReg, nextLayerResReg : signedNeuron;
 
-	signal inputs  : MAC_inputs;
-	signal weights : MAC_weights;
-
-	signal macRes : MAC_output;
-
+	signal inputs                                       : MAC_inputs;
+	signal weights                                      : MAC_weights;
+	signal macRes                                       : MAC_output;
 	signal AddResToSaturationCheck, newCalcMux, holdMux : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 5 + 1 - 1) downto 0);
-
-	signal concatRight : signed(fixWeightright + inferredWeightBits - 1 downto 0);
-	
-	signal concatLeft  : signed(fixWeightleft + 5 - 1 downto 0);
-    
-    signal newcalc_reg, hold_reg: std_logic;
-
+	signal concatRight                                  : signed(fixWeightright + inferredWeightBits - 1 downto 0);
+	signal concatLeft                                   : signed((fixWeightleft - 1) + 5 - 1 downto 0);
+	signal newcalc_reg, hold_reg                        : std_logic;
+	signal bias                                         : signedNeuron;
+	signal addBiasOut									: signedNeuron;
 	component MAC
 		port(
 			clk     : in  std_logic;
@@ -76,7 +72,6 @@ architecture RTL of MACFullFilter is
 	end component;
 
 begin
-	result <= layerResReg;
 
 	MAC1 : MAC
 		port map(
@@ -113,6 +108,7 @@ begin
 		AddResToSaturationCheck <= newCalcMux + holdMux;
 		concatLeft              <= (others => '0');
 		concatRight             <= (others => '0');
+		bias					<= (others => '0'); --temperary value
 		case hold_reg is
 			when '1' =>
 				holdMux <= (others => '0');
@@ -136,35 +132,45 @@ begin
 					newCalcMux <= '1' & concatLeft & layerResReg & concatRight;
 				end if;
 
-				
+
 		end case;
 
 		--check for saturation
-		case AddResToSaturationCheck(AddResToSaturationCheck'length - 1 downto AddResToSaturationCheck'length - 5 - fixWeightleft  - 1) is -- first -1 to have the extra bit possiple by the addition. secind -1 To look at the sign aswell
+		case AddResToSaturationCheck(AddResToSaturationCheck'length - 1 downto (AddResToSaturationCheck'length - 1) - 1 - 5 - (fixWeightleft - 1)) is -- first -1 to have the extra bit possiple by the addition. secind -1 To look at the sign aswell
 			when (others => '1') =>     -- the result has not meet negative saturation
-				nextLayerResReg <= AddResToSaturationCheck(AddResToSaturationCheck'length - 5 - fixWeightleft - 1 - 1 downto fixWeightright + inferredWeightBits);
+				nextLayerResReg <= AddResToSaturationCheck((AddResToSaturationCheck'length - 1) - 1 - 5 - (fixWeightleft - 1) downto fixWeightright + inferredWeightBits);
 			when (others => '0') =>     -- the result has not meet posative saturation
-				nextLayerResReg <= AddResToSaturationCheck(AddResToSaturationCheck'length - 5 - fixWeightleft - 1 - 1 downto fixWeightright + inferredWeightBits);
+				nextLayerResReg <= AddResToSaturationCheck((AddResToSaturationCheck'length - 1) - 1 - 5 - (fixWeightleft - 1) downto fixWeightright + inferredWeightBits);
 			when others =>              -- saturation detected
 				if AddResToSaturationCheck(AddResToSaturationCheck'length - 1) = '0' then -- "overflow" saturation detected
-					nextLayerResReg <= '0' & "111111111111111"; -- highest possiple number is passed
+					nextLayerResReg <= '0' & "1111111111111111"; -- highest possiple number is passed
 				else
-					nextLayerResReg <= '1' & "000000000000000"; -- lowest possiple number is passed
+					nextLayerResReg <= '1' & "0000000000000000"; -- lowest possiple number is passed
 				end if;
 		end case;
+		
+		-- bias and reLU
+
+		addBiasOut <= layerResReg + bias;
+		if addBiasOut(addBiasOut'length - 1) = '1' then
+			result <= (others => '0');
+		else
+			result <= unsigned(addBiasOut(addBiasOut'length - 2 downto 0));
+		end if;
+		
 
 	end process makeMuxLogic;
 
 	name : process(clk, rst) is
 	begin
 		if rst = '1' then
-			layerResReg <= X"0000";
-            newcalc_reg <= '0';
-            hold_reg <= '0';
+			layerResReg <= X"0000" & "0";
+			newcalc_reg <= '0';
+			hold_reg    <= '0';
 		elsif rising_edge(clk) then
 			layerResReg <= nextLayerResReg;
-            newcalc_reg <= newcalc;
-            hold_reg <= hold;
+			newcalc_reg <= newcalc;
+			hold_reg    <= hold;
 		end if;
 	end process name;
 

@@ -22,7 +22,7 @@ architecture rtl of tb_top is
             addressX : in integer range 0 to 27;
             addressY : in integer range 0 to 27;
             addressZ : in integer range 0 to 2;
-            output   : out signed(15 downto 0)
+            output   : out unsigned(15 downto 0)
         );
     end component;
 

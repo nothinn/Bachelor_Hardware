@@ -8,29 +8,27 @@ package Types is
 
 	constant fixInputleft  : integer := 6;
 	constant fixInputright : integer := 10;
-	
+
 	constant inferredWeightBits : integer := 2;
-	
+
 	type MAC_weights is array (24 downto 0) of signed((fixWeightleft + fixWeightright - 1) downto 0);
-	type MAC_inputs is array (24 downto 0) of signed((fixInputleft + fixInputright - 1) downto 0);
-	subtype MAC_result is signed((fixInputleft + fixInputright - 1) downto 0);
-	
+	type MAC_inputs is array (24 downto 0) of unsigned((fixInputleft + fixInputright - 1) downto 0);
+	subtype MAC_result is unsigned((fixInputleft + fixInputright - 1) downto 0);
+
 	subtype MAC_output is signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 5 - 1) downto 0);
+	subtype signedNeuron is signed(fixInputleft + fixInputright downto 0);
+	type signedNeuronsType is array (24 downto 0) of signedNeuron;
 
+	type ram_input is array (integer range <>) of MAC_result;
 
-    type ram_input is array(integer range <>) of MAC_result;
-	
-	constant in_simulation : boolean := false
-    --pragma synthesis_off
-    or true
-    --pragma synthesis_on
-    ;
-    
-    
-    type mem_type is array(integer range 7 downto 0) of MAC_result;
-    
-    type mem_block is array(144 downto 0) of mem_type;
-    type mem_ram is array(integer range 24 downto 0) of mem_block;
+	constant in_simulation : boolean := false --pragma synthesis_off
+	or true--pragma synthesis_on
+	;
+
+	type mem_type is array (integer range 7 downto 0) of MAC_result;
+
+	type mem_block is array (144 downto 0) of mem_type;
+	type mem_ram is array (integer range 24 downto 0) of mem_block;
 
 end package Types;
 
