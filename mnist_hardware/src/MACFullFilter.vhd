@@ -11,7 +11,6 @@ use work.types.all;
 
 Add bias før relu.
 */
-
 entity MACFullFilter is
 	port(
 		clk     : in  std_logic;
@@ -34,9 +33,15 @@ architecture RTL of MACFullFilter is
 	signal AddResToSaturationCheck, newCalcMux, holdMux : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 5 + 1 - 1) downto 0);
 	signal concatRight                                  : signed(fixWeightright + inferredWeightBits - 1 downto 0);
 	signal concatLeft                                   : signed((fixWeightleft - 1) + 5 - 1 downto 0);
-	signal newcalc_reg, hold_reg                        : std_logic;
+	signal newcalc_reg, newcalc_reg0, hold_reg                         : std_logic;
 	signal bias                                         : signedNeuron;
 	signal addBiasOut									: signedNeuron;
+	
+	
+	signal biasOut                                      : signed(7 downto 0);
+	
+	signal filter_reg : unsigned(4 downto 0);
+	
 	component MAC
 		port(
 			clk     : in  std_logic;
@@ -61,17 +66,21 @@ architecture RTL of MACFullFilter is
 		);
 	end component;
 
-	component FirstRom is
-		port(
-			clk      : in  std_logic;
-			addressX : in  integer range 0 to 27;
-			addressY : in  integer range 0 to 27;
-			addressZ : in  integer range 0 to 2;
-			output   : out unsigned(15 downto 0)
-		);
-	end component;
+    component biasRom is
+        port (
+            clk: in  std_logic;
+            rst: in  std_logic;
+            filter: in integer range 0 to 31;
+            output: out signed(7 downto 0)
+        );
+     end component;
+
+    
 
 begin
+
+
+
 
 	MAC1 : MAC
 		port map(
@@ -81,6 +90,16 @@ begin
 			neurons => inputs,
 			results => macRes
 		);
+		
+		
+		
+    biasRom1 : biasRom
+            port map(
+                clk => clk,
+                rst => rst,
+                filter => to_integer(filter_reg),
+                output => biasout
+            );
 
 	makeROMsy : for I in 0 to 4 generate
 		makeROMsx : for J in 0 to 4 generate
@@ -108,7 +127,7 @@ begin
 		AddResToSaturationCheck <= newCalcMux + holdMux;
 		concatLeft              <= (others => '0');
 		concatRight             <= (others => '0');
-		bias					<= (others => '0'); --temperary value
+		--bias					<= (others => '0'); --temperary value
 		case hold_reg is
 			when '1' =>
 				holdMux <= (others => '0');
@@ -119,7 +138,14 @@ begin
 					holdMux <= '1' & macRes;
 				end if;
 		end case;
-
+		
+		case biasOut(biasOut'length-1) is
+		      when '1' =>
+		          bias <= "11111111" & biasOut & '0' ;
+		      when others =>
+		          bias <= "00000000" & biasOut & '0' ;
+        end case;
+        
 		case newCalc_reg is
 			when '1' =>
 				newCalcMux <= (others => '0');
@@ -165,12 +191,16 @@ begin
 	begin
 		if rst = '1' then
 			layerResReg <= X"0000" & "0";
+			newcalc_reg0 <= '0';
 			newcalc_reg <= '0';
 			hold_reg    <= '0';
+			filter_reg <= (others => '0');
 		elsif rising_edge(clk) then
 			layerResReg <= nextLayerResReg;
-			newcalc_reg <= newcalc;
+			newcalc_reg0 <= newcalc;
+			newcalc_reg <= newcalc_reg0;
 			hold_reg    <= hold;
+			filter_reg <= filter;
 		end if;
 	end process name;
 

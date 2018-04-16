@@ -21,7 +21,6 @@ entity weightsRom is
 end entity;
 
 architecture rtl of weightsRom is
-
 begin
     process(all)
     begin

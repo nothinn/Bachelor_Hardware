@@ -9,6 +9,7 @@ entity fsm is
         start: in std_logic;
         hold: out std_logic;
         new_calc: out std_logic;
+        writeEnable: out std_logic;
         x : out integer;
         y : out integer;
         depth: out integer;
@@ -19,6 +20,7 @@ entity fsm is
 end entity;
 
 architecture rtl of fsm is
+
     
     constant XMAX, YMAX: integer := 28;
     
@@ -41,9 +43,10 @@ begin
     depth <= depthin;
     hold <= '0';
     new_calc <= new_calcint;
-    
+
     process(all)
     begin
+        writeEnable <= '0';
         state_next <= state;
         xint_next <= xint;
         yint_next <= yint;
@@ -80,7 +83,7 @@ begin
                 end if;
 
             when save =>
-                
+                writeEnable <= '1';
                 count_next <= count + 8;
                 
                 if count + 8 < 32 then

@@ -49,8 +49,7 @@ architecture rtl of resultRam is
             depth_addr : out integer range 0 to integer( depth_size * ((ceil(real(ram_size) / real(size)) ** 2) / NrOfInputs) ) - integer(1)
         );
     end component;
-    
-    
+        
     
     
 --    type mem_type is array(integer range NrOfInputs-1 downto 0) of MAC_result;

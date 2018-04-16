@@ -21,7 +21,6 @@ begin
     process(all)
     begin
         if rising_edge(clk) then 
-
             case addressX is
                 when 0 =>
                     case addressY is

@@ -14,6 +14,7 @@ entity tb_top is
 
 end entity;
 
+
 architecture rtl of tb_top is
     
     component FirstRom is
@@ -65,6 +66,7 @@ architecture rtl of tb_top is
             start    : in std_logic;
             hold     : out std_logic;
             new_calc : out std_logic;
+            writeEnable: out std_logic;
             x        : out integer;
             y        : out integer;
             depth    : out integer;
@@ -85,9 +87,11 @@ architecture rtl of tb_top is
     
     signal filter: unsigned(4 downto 0);
 
-    signal addressX: integer;
-    signal addressY: integer;
+    signal addressX, addressX_reg,addressX_reg2 : integer;
+    signal addressY, addressY_reg, addressY_reg2: integer;
     signal addressZ: integer range 0 to 31;
+    
+    
     
     signal hold, newCalc, done: std_logic;
     
@@ -102,7 +106,9 @@ architecture rtl of tb_top is
     signal en_ram: std_logic:='0';
     signal we_ram: std_logic:='0';
     
-    signal pre_filter: integer;
+    signal writeEnable, writeEnableReg : std_logic;
+    
+    signal pre_filter, filter_reg, filter_reg2: integer;
     
     
     type filter_array is array (7 downto 0) of unsigned(4 downto 0);
@@ -112,6 +118,25 @@ architecture rtl of tb_top is
     
 begin
     
+    process(clk)
+    begin
+        if rst = '1' then
+            writeEnableReg <= '0';
+            we_ram <= '0';
+        elsif rising_edge(clk) then
+            writeEnableReg <= writeEnable;
+            we_ram <= writeEnableReg;
+            
+            addressX_reg <= addressX;
+            addressX_reg2 <= addressX;
+            
+            addressY_reg <= addressY;
+            addressY_reg2 <= addressY_reg;
+            
+            filter_reg <= pre_filter;
+            filter_Reg2 <= filter_reg;
+        end if;
+    end process;
     
     gen_romX: for x in -2 to 2 generate
         gen_romY: for y in -2 to 2 generate
@@ -160,9 +185,9 @@ begin
             clk        => clk,
             ena        => en_ram,
             wea        => we_ram,
-            depth      => addressZ,
-            addressX   => addressX,
-            addressY   => addressY,
+            depth      => filter_reg2,
+            addressX   => addressX_reg2,
+            addressY   => addressY_reg2,
             dia        => mac_array,
             doa        => open
         );
@@ -174,6 +199,7 @@ begin
             start    => start,
             hold     => hold,
             new_calc => newCalc,
+            writeEnable => writeEnable,
             x        => addressX,
             y        => addressY,
             depth    => addressZ,

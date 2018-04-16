@@ -19,7 +19,6 @@ entity addressTranslator is
         blocknr    : out integer range 0 to size ** 2 - 1;
         depth_addr : out integer range 0 to integer( depth_size * ((ceil(real(ram_size) / real(size)) ** 2) / NrOfInputs) ) - integer(1)
         
-        
     );
 end entity;
 
