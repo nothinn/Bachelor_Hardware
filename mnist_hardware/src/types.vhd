@@ -10,6 +10,8 @@ package Types is
 	constant fixInputright : integer := 10;
 
 	constant inferredWeightBits : integer := 2;
+	
+	constant NrOfInputs : integer := 8;
 
 	type MAC_weights is array (24 downto 0) of signed((fixWeightleft + fixWeightright - 1) downto 0);
 	type MAC_inputs is array (24 downto 0) of unsigned((fixInputleft + fixInputright - 1) downto 0);
@@ -21,6 +23,7 @@ package Types is
 
 	type ram_input is array (integer range <>) of MAC_result;
 
+	
 	constant in_simulation : boolean := false --pragma synthesis_off
 	or true--pragma synthesis_on
 	;
