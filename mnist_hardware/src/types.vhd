@@ -30,7 +30,7 @@ package Types is
 
 	type mem_type is array (integer range 7 downto 0) of MAC_result;
 
-	type mem_block is array (144 downto 0) of mem_type;
+	type mem_block is array (36 downto 0) of mem_type;
 	type mem_ram is array (integer range 24 downto 0) of mem_block;
 
 end package Types;
