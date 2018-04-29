@@ -4,6 +4,7 @@ library IEEE;
 
     use IEEE.MATH_REAL.CEIL;
 
+
 entity addressTranslator is
     generic(
         depth_size: integer := 32;
@@ -25,30 +26,33 @@ end entity;
 architecture rtl of addressTranslator is
 
 constant b : integer := depth_size * integer(CEIL(real(ram_size)/real(size)));
+
+
+type rom_typex is array(0 to ram_size-1) of integer;
+type rom_typey is array(0 to ram_size-1) of rom_typex;
+
+
+
+signal rom_blocknr: rom_typey;
+signal rom_depth_addr: rom_typey;
+
+
+
 begin
+        --Fill out rom using a generate
+    gen_romx: for x in 0 to ram_size-1 generate
+        gen_romy: for y in 0 to ram_size-1 generate
+            rom_blocknr(x)(y) <= size * ( y mod size) + x mod size;
+            rom_depth_addr(x)(y) <=  ((integer(x / size) * depth_size + b *integer( y/size)))/8;
+        end generate;
+    end generate;
     
     
-    process(all)
-        
-    begin
-        blocknr <= 0;
-        depth_addr <= 0;
-        
-        for x in 0 to ram_size - 1 loop
-            for y in 0 to ram_size - 1 loop
-                
-                if addressX = x and addressY = y then
-                    blocknr <= size * ( y mod size) + x mod size;
-                    
-                    
-                    depth_addr <= ((integer(x / size) * depth_size + b *integer( y/size)))/8;
-                end if;
-            end loop;
-            
-            
-        end loop;
-        
-    end process;
     
+
     
+    --Read from rom
+    blocknr <= rom_blocknr(addressX)(addressY);
+    depth_addr <= rom_depth_addr(addressX)(addressY);
+
 end architecture;
