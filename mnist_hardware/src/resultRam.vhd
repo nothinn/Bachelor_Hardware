@@ -46,7 +46,7 @@ architecture rtl of resultRam is
             addressX   : in integer range 0 to ram_size - 1;
             addressY   : in integer range 0 to ram_size - 1;
             blocknr    : out integer range 0 to size ** 2 - 1;
-            depth_addr : out integer range 0 to integer( real(depth_size) * ((ceil(real(ram_size) / real(size)) ** 2) / real(NrOfInputs)) ) - integer(1)
+            depth_addr : out integer range 0 to integer( depth_size * ((ceil(real(ram_size) / real(size)) ** 2) / NrOfInputs) ) - integer(1)
         );
     end component;
         
@@ -67,17 +67,16 @@ architecture rtl of resultRam is
     
     type trans_block is array(integer range size**2-1 downto 0) of integer range 0 to size **2-1;
     
-    type trans_addr is array(integer range size**2-1 downto 0) of integer range 0 to integer(real(depth_size) * (ceil(real(ram_size) / real(size) ) ** 2)) / NrOfInputs - 1;
+    type trans_addr is array(integer range size**2-1 downto 0) of integer range 0 to integer(depth_size * (ceil(real(ram_size) / real(size) ) ** 2)) / NrOfInputs - 1;
     
     
     
     signal blocknr: trans_block;
     signal depth_addr: trans_addr;
     
-    signal depthin: unsigned(10 downto 0);
     
 begin
-    depthin <= to_unsigned(depth, 11);
+    
     ramProcess: process (clk) is
     begin
         if rising_edge(clk) then
@@ -88,7 +87,7 @@ begin
                         if addressX + x < 0 or addressX + x >= size or addressY + y < 0 or addressY + y >= size then
                             doa((x+2)*size + (y+2)) <= (others => '0');
                         else
-                            doa((x+2)*size + (y+2)) <= memory(blocknr(x + addressX + size*(y + addressY)))  (depth_addr(x + addressX + size*(y + addressY) ) + to_integer(depthin(10 downto 4))) ( to_integer(depthin(3 downto 0)));
+                            doa((x+2)*size + (y+2)) <= memory(blocknr(x + addressX + size*(y + addressY)))  (depth_addr(x + addressX + size*(y + addressY) ) + depth/8) ( depth mod 8);
                         end if;
                        
                     end loop;

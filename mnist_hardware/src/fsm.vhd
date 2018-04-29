@@ -39,8 +39,8 @@ architecture rtl of fsm is
 
 begin
 	filter   <= count;
-	x        <= xint;
-	y        <= yint;
+	x        <= xint + to_integer(maxCounter(0 downto 0));
+	y        <= yint + to_integer(maxCounter(1 downto 1));
 	depth    <= depthin;
 	hold     <= '0';
 	new_calc <= new_calcint;
@@ -109,8 +109,8 @@ begin
 					state_next <= prep;
 				else
 					count_next <= 0;
-					if xint = XMAX - 1 then
-						if yint = YMAX - 1 then
+					if xint = XMAX - 2 then
+						if yint = YMAX - 2 then
 							state_next <= finished;
 						else
 							xint_next  <= 0;
@@ -142,6 +142,8 @@ begin
 				depthin     <= 0;
 				count       <= 0;
 				new_calcint <= '0';
+				maxCounter  <= (others => '0');
+				
 			else
 				state       <= state_next;
 				xint        <= xint_next;
@@ -149,6 +151,7 @@ begin
 				depthin     <= depthin_next;
 				count       <= count_next;
 				new_calcint <= new_calcint_next;
+				maxCounter  <= maxCounter_next;
 			end if;
 		end if;
 	end process;

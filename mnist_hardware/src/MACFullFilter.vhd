@@ -141,9 +141,9 @@ begin
 		
 		case biasOut(biasOut'length-1) is
 		      when '1' =>
-		          bias <= "11111111" & biasOut & '0' ;
+		          bias <= "111111111" & biasOut;
 		      when others =>
-		          bias <= "00000000" & biasOut & '0' ;
+		          bias <= "000000000" & biasOut;
         end case;
         
 		case newCalc_reg is

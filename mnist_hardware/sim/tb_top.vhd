@@ -132,7 +132,7 @@ begin
 			we_ram         <= writeEnableReg;
 
 			addressX_reg  <= addressX;
-			addressX_reg2 <= addressX;
+			addressX_reg2 <= addressX_reg;
 
 			addressY_reg  <= addressY;
 			addressY_reg2 <= addressY_reg;
@@ -150,8 +150,8 @@ begin
 			FirstRom_inst : FirstRom
 				port map(
 					clk      => clk,
-					addressX => (addressX + x + to_integer(maxCounterOutx)),
-					addressY => (addressY + y + to_integer(maxCounterOuty)),
+					addressX => (addressX + x),
+					addressY => (addressY + y),
 					addressZ => addressZ,
 					output   => input_mac((x + 2) + (y + 2)*5)
 				);
