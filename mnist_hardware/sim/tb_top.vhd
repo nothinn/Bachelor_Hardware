@@ -95,8 +95,8 @@ architecture rtl of tb_top is
 
 	signal filter : unsigned(4 downto 0);
 
-	signal addressX, addressX_reg, addressX_reg2, addressXOut : integer;
-	signal addressY, addressY_reg, addressY_reg2, addressYOut : integer;
+	signal addressX, addressX_reg, addressX_reg2, addressXOut : integer := 0;
+	signal addressY, addressY_reg, addressY_reg2, addressYOut : integer := 0;
 	signal addressZ                              : integer range 0 to 31;
 
 	signal hold, newCalc, done, calcMax, newMax : std_logic;
@@ -124,9 +124,21 @@ begin
 	
 	process(clk)
 	begin
-		if rst = '1' then
+		if rst = '1' then		
 			writeEnableReg <= '0';
 			we_ram         <= '0';
+			
+			addressX_reg  <= 0;
+            addressX_reg2 <= 0;
+
+            addressY_reg  <= 0;
+            addressY_reg2 <= 0;
+
+            filter_reg  <= 0;
+            filter_Reg2 <= 0;
+
+            maxCounterOutx <= maxCounterOut(0 downto 0);
+            maxCounterOuty <= maxCounterOut(1 downto 1);
 		elsif rising_edge(clk) then
 			writeEnableReg <= writeEnable;
 			we_ram         <= writeEnableReg;
