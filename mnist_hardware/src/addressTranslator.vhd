@@ -52,7 +52,14 @@ begin
 
     
     --Read from rom
-    blocknr <= rom_blocknr(addressX)(addressY);
-    depth_addr <= rom_depth_addr(addressX)(addressY);
-
+    process(all)
+    begin
+        if addressX < 0 or addressY < 0 or addressX >= ram_size or addressY >= ram_size then
+            blocknr <= 0;
+            depth_addr <= 0;
+        else
+            blocknr <= rom_blocknr(addressX)(addressY);
+            depth_addr <= rom_depth_addr(addressX)(addressY);
+        end if;
+    end process;
 end architecture;
