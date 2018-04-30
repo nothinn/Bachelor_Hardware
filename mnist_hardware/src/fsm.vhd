@@ -31,7 +31,7 @@ architecture rtl of fsm is
 
 	signal count, count_next : integer;
 
-	signal xint, xint_next, yint, yint_next, depthin, depthin_next : integer;
+	signal xint, xint_next, yint, yint_next, depthin, depthin_next : integer := 0;
 
 	signal new_calcint, new_calcint_next : std_logic;
 
@@ -134,25 +134,23 @@ begin
 
 	process(clk)
 	begin
-		if rising_edge(clk) then
-			if rst = '1' then
-				state       <= idle;
-				xint        <= 0;
-				yint        <= 0;
-				depthin     <= 0;
-				count       <= 0;
-				new_calcint <= '0';
-				maxCounter  <= (others => '0');
-				
-			else
-				state       <= state_next;
-				xint        <= xint_next;
-				yint        <= yint_next;
-				depthin     <= depthin_next;
-				count       <= count_next;
-				new_calcint <= new_calcint_next;
-				maxCounter  <= maxCounter_next;
-			end if;
+		if rst = '1'  then
+            state       <= idle;
+            xint        <= 0;
+            yint        <= 0;
+            depthin     <= 0;
+            count       <= 0;
+            new_calcint <= '0';
+            maxCounter  <= (others => '0');
+            
+        elsif rising_edge(clk) then
+            state       <= state_next;
+            xint        <= xint_next;
+            yint        <= yint_next;
+            depthin     <= depthin_next;
+            count       <= count_next;
+            new_calcint <= new_calcint_next;
+            maxCounter  <= maxCounter_next;
 		end if;
 	end process;
 
