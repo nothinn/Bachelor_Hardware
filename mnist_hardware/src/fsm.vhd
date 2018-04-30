@@ -91,7 +91,7 @@ begin
 				calcmax         <= '1';
 				maxCounter_next <= maxCounter + 1;
 
-				if maxCounter + 1= "00" then
+				if maxCounter = "00" then
 					newMax <= '1';
 				end if;
 
