@@ -40,7 +40,7 @@ architecture RTL of MACFullFilter is
 	
 	signal biasOut                                      : signed(7 downto 0);
 	
-	signal filter_reg : unsigned(4 downto 0);
+	signal filter_reg, filter_reg1, filter_reg2 : unsigned(4 downto 0);
 	
 	component MAC
 		port(
@@ -97,7 +97,7 @@ begin
             port map(
                 clk => clk,
                 rst => rst,
-                filter => to_integer(filter_reg),
+                filter => to_integer(filter_reg2),
                 output => biasout
             );
 
@@ -195,12 +195,18 @@ begin
 			newcalc_reg <= '0';
 			hold_reg    <= '0';
 			filter_reg <= (others => '0');
+			filter_reg1 <= (others => '0');
+            filter_reg2 <= (others => '0');
+                        
 		elsif rising_edge(clk) then
 			layerResReg <= nextLayerResReg;
 			newcalc_reg0 <= newcalc;
 			newcalc_reg <= newcalc_reg0;
 			hold_reg    <= hold;
 			filter_reg <= filter;
+			filter_reg1 <= filter_reg;
+            filter_reg2 <= filter_reg1;
+                        
 		end if;
 	end process name;
 
