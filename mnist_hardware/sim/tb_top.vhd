@@ -95,13 +95,13 @@ architecture rtl of tb_top is
 
 	signal filter : unsigned(4 downto 0);
 
-	signal addressX, addressX_reg, addressX_reg2, addressXOut : integer := 0;
-	signal addressY, addressY_reg, addressY_reg2, addressYOut : integer := 0;
+	signal addressX, addressX_reg, addressX_reg2, addressXOut, addressXOut_reg, addressXOut_reg1, addressXOut_reg2  : integer := 0;
+	signal addressY, addressY_reg, addressY_reg2, addressYOut, addressYOut_reg, addressYOut_reg1, addressYOut_reg2 : integer := 0;
 	signal addressZ                              : integer range 0 to 31;
 
 	signal hold, newCalc, done, calcMax, newMax : std_logic;
 	signal maxCounterOut                        : unsigned(1 downto 0);
-	signal maxCounterOutx, maxCounterOuty       : unsigned(0 downto 0);
+	signal maxCounterOutx, maxCounterOuty : unsigned(0 downto 0);
 
 	signal start : std_logic := '0';
 
@@ -112,9 +112,9 @@ architecture rtl of tb_top is
 	signal en_ram : std_logic := '0';
 	signal we_ram : std_logic := '0';
 
-	signal writeEnable, writeEnableReg : std_logic;
+	signal writeEnable, writeEnableReg  : std_logic;
 
-	signal pre_filter, filter_reg, filter_reg2 : integer;
+	signal pre_filter, filter_reg, filter_reg1 : integer;
 
 	type filter_array is array (7 downto 0) of unsigned(4 downto 0);
 
@@ -122,7 +122,7 @@ architecture rtl of tb_top is
 
 begin
 	
-	process(clk)
+	process(clk, maxCounterOut(0 downto 0), maxCounterOut(1 downto 1), rst)
 	begin
 		if rst = '1' then		
 			writeEnableReg <= '0';
@@ -135,25 +135,37 @@ begin
             addressY_reg2 <= 0;
 
             filter_reg  <= 0;
-            filter_Reg2 <= 0;
 
             maxCounterOutx <= maxCounterOut(0 downto 0);
             maxCounterOuty <= maxCounterOut(1 downto 1);
+            
 		elsif rising_edge(clk) then
 			writeEnableReg <= writeEnable;
-			we_ram         <= writeEnableReg;
+			we_ram <= writeEnableReg;
 
 			addressX_reg  <= addressX;
 			addressX_reg2 <= addressX_reg;
 
 			addressY_reg  <= addressY;
 			addressY_reg2 <= addressY_reg;
-
+			
+			addressXOut_reg <= addressXOut;
+			addressXOut_reg1 <= addressXOut_reg; 
+			
+			
+			addressYOut_reg <= addressYOut;
+			addressYOut_reg1 <= addressYOut_reg; 
+			
+			
 			filter_reg  <= pre_filter;
-			filter_Reg2 <= filter_reg;
-
+			filter_Reg1 <= filter_reg;
+			
+			
+		
 			maxCounterOutx <= maxCounterOut(0 downto 0);
 			maxCounterOuty <= maxCounterOut(1 downto 1);
+			
+			
 		end if;
 	end process;
 
@@ -193,8 +205,8 @@ begin
 			);
 	end generate;
 	
-	addressXOut <= addressX_reg2/2;
-	addressYOut <= addressY_reg2/2;
+	addressXOut <= addressX/2;
+	addressYOut <= addressY/2;
 	
 	resultRam_inst : resultRam
 		generic map(
@@ -207,9 +219,9 @@ begin
 			clk      => clk,
 			ena      => en_ram,
 			wea      => we_ram,
-			depth    => filter_reg2,
-			addressX => addressXOut,
-			addressY => addressYOut,
+			depth    => filter_reg1,
+			addressX => addressXOut_reg1,
+			addressY => addressYOut_reg1,
 			dia      => max_array,
 			doa      => open
 		);
