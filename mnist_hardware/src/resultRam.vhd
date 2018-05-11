@@ -13,7 +13,7 @@ entity resultRam is
     generic(
         depth_size: integer := 32;
         size: integer := 5;
-	ram_size: integer := 28;
+		ram_size: integer := 28;
         
         NrOfInputs: integer := 8
 );
