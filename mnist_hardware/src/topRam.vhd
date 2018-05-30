@@ -1,4 +1,4 @@
-library IEEE;
+library IEEE; 
     use IEEE.std_logic_1164.all;
     use IEEE.numeric_std.all;
     use IEEE.std_logic_unsigned.all;
@@ -59,7 +59,9 @@ architecture rtl of topRam is
 
     component ram is
         generic (
-            size  :  integer := 64
+            depth  :  integer := 64;
+            width  :  integer := 7;
+            filter_width : integer := 5
         );
         port (
             clk   : in std_logic;
@@ -174,7 +176,9 @@ begin
     ramGen : for i in 0 to size **2 - 1 generate
         ram_inst: ram
             generic map (
-                size  => 64
+                depth  => depth_size,
+                width  => ram_size,
+                filter_width => size
             )
             port map (
                 clk   => clk,
@@ -217,24 +221,7 @@ begin
             end loop;
         end if;
     end process;
-    /*
-    process (all) is
-    variable i: Integer;
-    begin
-        if ena = '1' then
-            for x in -size/2 to size/2 loop
-                for y in -size/2 to size/2 loop
-                    i := (x+2)*size + y + 2;
-                    
-                    if addressX + x < 0 or addressX + x >= ram_size or addressY + y < 0 or addressY + y >= ram_size then
-                    else
-                        depth_addr_arr(blocknr_arr(i)) <= depth_addr_arr2(i) + depth;
-                    end if;
-                end loop;
-            end loop;
-        end if;
-    end process;
-    */
+
     
     process(all) is
     begin
@@ -252,9 +239,9 @@ begin
             addressTranslator_inst: addressTranslator
                 generic map (
                     depth_size => depth_size,
-                    size       => 5,
-                    ram_size   => 28,
-                    NrOfInputs => 8
+                    size       => size,
+                    ram_size   => ram_size,
+                    NrOfInputs => NrOfInputs
                 )
                 port map (
                     addressX   => addressX + (-size/2 + i),
@@ -273,10 +260,10 @@ begin
     --We only look at a single address on the way in.
     addressTranslator_inst: addressTranslator
         generic map (
-            depth_size => depth_size,
-            size       => 5,
-            ram_size   => 28,
-            NrOfInputs => 8
+                depth_size => depth_size,
+                size       => size,
+                ram_size   => ram_size,
+                NrOfInputs => NrOfInputs
         )
         port map (
             addressX   => latchedAddrX,
