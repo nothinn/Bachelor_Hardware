@@ -2,10 +2,12 @@ library IEEE;
     use IEEE.std_logic_1164.all;
     use IEEE.numeric_std.all;
     use work.Types.all;
-
+    use IEEE.MATH_REAL.all;
 entity ram is
     generic(
-        size: integer := 64
+        depth: integer := 64;
+        width: integer := 7;
+        filter_width: integer := 5
     );
     port (
         clk: in  std_logic;
@@ -26,18 +28,19 @@ entity ram is
         doa: out MAC_result;
         dob: out MAC_result
         
-    );
+    );  
 end entity;
 
 architecture rtl of ram is
    
-    shared variable RAM : mem_block;
+    shared variable RAM : mem_block((depth * integer((Ceil(real(width)/real(filter_width)))) **2 - 1) downto 0);
+
 begin
     process(clk)
     begin
         if rising_edge(clk) then
             if ena = '1' then
-                doa <= ram(addra);
+                doa <= ram(addra mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 ));
                 if wea = '1' then
                     ram(addra) := dia;
                 end if;
@@ -49,7 +52,7 @@ begin
     begin
         if rising_edge(clk) then
             if enb = '1' then
-                dob <= RAM(addrb);
+                dob <= RAM(addrb mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 ));
                 if web = '1' then
                     ram(addrb) := dib;
                 end if;
