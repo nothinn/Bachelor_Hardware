@@ -1,4 +1,4 @@
-library ieee;
+library ieee; 
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.types.all;
@@ -11,12 +11,12 @@ entity topFSM is
 		start           : in  std_logic;
 		innerDone       : in  std_logic;
 		innerStart      : out std_logic;
-		innerDepth      : out unsigned(5 downto 0); -- in this implementation the maximal depth of a feature map is 64
-		innerXMax       : out unsigned(4 downto 0); -- the max height/witdh of a featuremap is 28
-		innerYMax       : out unsigned(4 downto 0);
-		innerTotFilters : out unsigned(5 downto 0); -- the maximum amount of filters used in a layer is 64
+		innerDepth      : out unsigned(6 downto 0); -- in this implementation the maximal depth of a feature map is 64
+		innerXMax       : out unsigned(5 downto 0); -- the max height/witdh of a featuremap is 28
+		innerYMax       : out unsigned(5 downto 0);
+		innerTotFilters : out unsigned(6 downto 0); -- the maximum amount of filters used in a layer is 64
 		innerConvFC     : out std_logic; -- determines whether the current layer is a Conv or FC layer (is used in the inner FSM
-		inOutRam        : out std_logic;
+		layerCount      : out unsigned(layerCounterWidth -1 downto 0);
 		innerDoneAck    : out std_logic
 	);
 end entity topFSM;
@@ -34,7 +34,7 @@ begin
 	innerYMax       <= to_unsigned(layerWidthHeight(to_integer(layer)), innerYMax'length);
 	innerTotFilters <= to_unsigned(layerTotFilters(to_integer(layer)), innerTotFilters'length);
 	innerConvFC     <= layerConvFC(to_integer(layer));
-	inOutRam        <= layer(0);
+	layerCount      <= layer;
 
 	process(all)
 	begin
