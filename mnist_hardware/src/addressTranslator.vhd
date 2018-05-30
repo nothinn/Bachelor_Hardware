@@ -7,7 +7,7 @@ library IEEE;
 
 entity addressTranslator is
     generic(
-        depth_size: integer := 32;
+        depth_size: integer := 64;
         size: integer := 5;
         ram_size: integer := 28;
 
@@ -18,6 +18,7 @@ entity addressTranslator is
         addressY: in integer range 0 to ram_size-1;
         
         blocknr    : out integer range 0 to size ** 2 - 1;
+        blockValid : out std_logic;
         depth_addr : out integer range 0 to integer( depth_size * ((ceil(real(ram_size) / real(size)) ** 2) / NrOfInputs) ) - integer(1)
         
     );
@@ -33,8 +34,8 @@ type rom_typey is array(0 to ram_size-1) of rom_typex;
 
 
 
-signal rom_blocknr: rom_typey;
-signal rom_depth_addr: rom_typey;
+signal rom_blocknr: rom_typey := (others => (others => 0));
+signal rom_depth_addr: rom_typey  := (others => (others => 0)); 
 
 
 
@@ -43,10 +44,9 @@ begin
     gen_romx: for x in 0 to ram_size-1 generate
         gen_romy: for y in 0 to ram_size-1 generate
             rom_blocknr(x)(y) <= size * ( y mod size) + x mod size;
-            rom_depth_addr(x)(y) <=  ((integer(x / size) * depth_size + b *integer( y/size)))/8;
+            rom_depth_addr(x)(y) <=  ((integer(x / size) * depth_size + b * integer( y/size)));
         end generate;
     end generate;
-    
     
     
 
@@ -57,7 +57,9 @@ begin
         if addressX < 0 or addressY < 0 or addressX >= ram_size or addressY >= ram_size then
             blocknr <= 0;
             depth_addr <= 0;
+            blockValid <= '0';
         else
+            blockValid <= '1';
             blocknr <= rom_blocknr(addressX)(addressY);
             depth_addr <= rom_depth_addr(addressX)(addressY);
         end if;
