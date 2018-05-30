@@ -3,6 +3,9 @@ use ieee.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 package Types is
+    constant MaxSizeOfFilterDepth : Integer := 64;
+    constant NumberOfStepsOfRam: Integer := 6*6;
+
 	constant fixWeightleft  : Integer := 1;
 	constant fixWeightright : integer := 7;
 
@@ -28,9 +31,10 @@ package Types is
 	or true--pragma synthesis_on
 	;
 
-	type mem_type is array (integer range 7 downto 0) of MAC_result;
+	
+	--type mem_type is array (integer range 7 downto 0) of MAC_result;
 
-	type mem_block is array (144 downto 0) of mem_type;
+	type mem_block is array (MaxSizeOfFilterDepth*NumberOfStepsOfRam-1 downto 0) of MAC_result;
 	type mem_ram is array (integer range 24 downto 0) of mem_block;
 
 end package Types;
