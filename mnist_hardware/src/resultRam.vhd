@@ -59,7 +59,7 @@ architecture rtl of resultRam is
     
 --    type mem_ram is array(integer range size**2-1 downto 0) of mem_block;
     
-    signal memory : mem_ram := (others =>(others =>(others =>(others=>'0'))));
+    signal memory : mem_ram ;
     
     
     
