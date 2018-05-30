@@ -1,15 +1,15 @@
 library IEEE;
     use IEEE.std_logic_1164.all;
     use IEEE.numeric_std.all;
-
     use work.Types.all;
+    use work.ConfigVHDL.all;
 
 entity biasRom is
     port (
         clk: in  std_logic;
         rst: in  std_logic;
 		filter: in integer range 0 to 31;
-
+		layer: in integer range 0 to nrOfLayers;
         output: out signed(7 downto 0)
     );
 end entity;

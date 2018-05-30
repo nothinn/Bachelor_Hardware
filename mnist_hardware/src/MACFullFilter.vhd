@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.types.all;
-
+use work.configVHDL.all
 --NOTER
 /*
 Ændre Fullfiltermac til at outputtet er 16 bit unsigned. (ReLu).

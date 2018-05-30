@@ -1,9 +1,8 @@
 library IEEE;
     use IEEE.std_logic_1164.all;
     use IEEE.numeric_std.all;
-
     use work.Types.all;
-
+	use work.ConfigVHDL.all;
 entity weightsRom is
     generic (
         addressX: integer range 0 to 4; 
@@ -13,6 +12,7 @@ entity weightsRom is
     port (
         clk: in  std_logic;
         rst: in  std_logic;
+        layer: in integer range 0 to nrOfLayers;
         filter: in integer range 0 to 31;
         addressZ: in integer range 0 to 2;
 
