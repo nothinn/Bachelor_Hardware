@@ -30,7 +30,7 @@ entity ram is
 end entity;
 
 architecture rtl of ram is
-    
+   
     shared variable RAM : mem_block;
 begin
     process(clk)
