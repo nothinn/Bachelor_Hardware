@@ -1,4 +1,4 @@
-library IEEE;
+library IEEE; 
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
   
@@ -7,10 +7,10 @@ entity fsm is
 		clk           : in  std_logic;
 		rst           : in  std_logic;
 		start         : in  std_logic;
-		inputDepth    : in  unsigned(5 downto 0); -- in this implementation the maximal depth of a feature map is 64
-		inputXMax     : in  unsigned(4 downto 0); -- the max height/witdh of a featuremap is 28
-		inputYMax     : in  unsigned(4 downto 0);
-		totalFilters  : in  unsigned(5 downto 0); -- the maximum amount of filters used in a layer is 64
+		inputDepth    : in  unsigned(6 downto 0); -- in this implementation the maximal depth of a feature map is 64
+		inputXMax     : in  unsigned(5 downto 0); -- the max height/witdh of a featuremap is 28
+		inputYMax     : in  unsigned(5 downto 0);
+		totalFilters  : in  unsigned(6 downto 0); -- the maximum amount of filters used in a layer is 64
 		doneAck		: in std_logic;
 		hold          : out std_logic;
 		new_calc      : out std_logic;
