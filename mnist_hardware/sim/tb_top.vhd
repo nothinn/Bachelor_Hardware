@@ -7,7 +7,7 @@ use work.Types.all;
 
 library std;
 use std.textio.all;
-
+ 
 entity tb_top is
 end entity;
 
@@ -66,11 +66,16 @@ architecture rtl of tb_top is
 		);
 	end component;
 
-	component fsm is
+	component fsm
 		port(
 			clk           : in  std_logic;
 			rst           : in  std_logic;
 			start         : in  std_logic;
+			inputDepth    : in  unsigned(5 downto 0);
+			inputXMax     : in  unsigned(4 downto 0);
+			inputYMax     : in  unsigned(4 downto 0);
+			totalFilters  : in  unsigned(5 downto 0);
+			doneAck       : in  std_logic;
 			hold          : out std_logic;
 			new_calc      : out std_logic;
 			writeEnable   : out std_logic;
@@ -83,7 +88,24 @@ architecture rtl of tb_top is
 			newMax        : out std_logic;
 			maxCounterOut : out unsigned(1 downto 0)
 		);
-	end component;
+	end component fsm;
+
+	component topFSM
+		port(
+			clk             : in  std_logic;
+			rst             : in  std_logic;
+			start           : in  std_logic;
+			innerDone       : in  std_logic;
+			innerStart      : out std_logic;
+			innerDepth      : out unsigned(5 downto 0);
+			innerXMax       : out unsigned(4 downto 0);
+			innerYMax       : out unsigned(4 downto 0);
+			innerTotFilters : out unsigned(5 downto 0);
+			innerConvFC     : out std_logic;
+			inOutRam        : out std_logic;
+			innerDoneAck    : out std_logic
+		);
+	end component topFSM;
 
 	constant CLK_PERIOD : time      := 10 ns;
 	signal clk          : std_logic;
@@ -95,13 +117,13 @@ architecture rtl of tb_top is
 
 	signal filter : unsigned(4 downto 0);
 
-	signal addressX, addressX_reg, addressX_reg2, addressXOut, addressXOut_reg, addressXOut_reg1, addressXOut_reg2  : integer := 0;
+	signal addressX, addressX_reg, addressX_reg2, addressXOut, addressXOut_reg, addressXOut_reg1, addressXOut_reg2 : integer := 0;
 	signal addressY, addressY_reg, addressY_reg2, addressYOut, addressYOut_reg, addressYOut_reg1, addressYOut_reg2 : integer := 0;
-	signal addressZ                              : integer range 0 to 31;
+	signal addressZ                                                                                                : integer range 0 to 31;
 
 	signal hold, newCalc, done, calcMax, newMax : std_logic;
 	signal maxCounterOut                        : unsigned(1 downto 0);
-	signal maxCounterOutx, maxCounterOuty : unsigned(0 downto 0);
+	signal maxCounterOutx, maxCounterOuty       : unsigned(0 downto 0);
 
 	signal start : std_logic := '0';
 
@@ -112,60 +134,63 @@ architecture rtl of tb_top is
 	signal en_ram : std_logic := '0';
 	signal we_ram : std_logic := '0';
 
-	signal writeEnable, writeEnableReg  : std_logic;
+	signal writeEnable, writeEnableReg : std_logic;
 
 	signal pre_filter, filter_reg, filter_reg1 : integer;
 
 	type filter_array is array (7 downto 0) of unsigned(4 downto 0);
 
-	signal filter_input : filter_array;
+	signal filter_input    : filter_array;
+	signal innerStart      : std_logic;
+	signal innerDepth      : unsigned(5 downto 0);
+	signal innerXMax       : unsigned(4 downto 0);
+	signal innerYMax       : unsigned(4 downto 0);
+	signal innerTotFilters : unsigned(5 downto 0);
+	signal innerConvFC     : std_logic;
+	signal inOutRam        : std_logic;
+	signal innerDoneAck    : std_logic;
 
 begin
-	
+
 	process(clk, maxCounterOut(0 downto 0), maxCounterOut(1 downto 1), rst)
 	begin
-		if rst = '1' then		
+		if rst = '1' then
 			writeEnableReg <= '0';
 			we_ram         <= '0';
-			
+
 			addressX_reg  <= 0;
-            addressX_reg2 <= 0;
+			addressX_reg2 <= 0;
 
-            addressY_reg  <= 0;
-            addressY_reg2 <= 0;
+			addressY_reg  <= 0;
+			addressY_reg2 <= 0;
 
-            filter_reg  <= 0;
+			filter_reg <= 0;
 
-            maxCounterOutx <= maxCounterOut(0 downto 0);
-            maxCounterOuty <= maxCounterOut(1 downto 1);
-            
+			maxCounterOutx <= maxCounterOut(0 downto 0);
+			maxCounterOuty <= maxCounterOut(1 downto 1);
+
 		elsif rising_edge(clk) then
 			writeEnableReg <= writeEnable;
-			we_ram <= writeEnableReg;
+			we_ram         <= writeEnableReg;
 
 			addressX_reg  <= addressX;
 			addressX_reg2 <= addressX_reg;
 
 			addressY_reg  <= addressY;
 			addressY_reg2 <= addressY_reg;
-			
-			addressXOut_reg <= addressXOut;
-			addressXOut_reg1 <= addressXOut_reg; 
-			
-			
-			addressYOut_reg <= addressYOut;
-			addressYOut_reg1 <= addressYOut_reg; 
-			
-			
+
+			addressXOut_reg  <= addressXOut;
+			addressXOut_reg1 <= addressXOut_reg;
+
+			addressYOut_reg  <= addressYOut;
+			addressYOut_reg1 <= addressYOut_reg;
+
 			filter_reg  <= pre_filter;
 			filter_Reg1 <= filter_reg;
-			
-			
-		
+
 			maxCounterOutx <= maxCounterOut(0 downto 0);
 			maxCounterOuty <= maxCounterOut(1 downto 1);
-			
-			
+
 		end if;
 	end process;
 
@@ -204,10 +229,10 @@ begin
 				result  => MAC_array(i)
 			);
 	end generate;
-	
+
 	addressXOut <= addressX/2;
 	addressYOut <= addressY/2;
-	
+
 	resultRam_inst : resultRam
 		generic map(
 			depth_size => 32,
@@ -230,7 +255,12 @@ begin
 		port map(
 			clk           => clk,
 			rst           => rst,
-			start         => start,
+			start         => innerstart, -- skal ændres
+			inputDepth    => innerDepth,
+			inputXMax     => innerXMax,
+			inputYMax     => innerYMax,
+			totalFilters  => innerTotFilters,
+			doneAck       => innerDoneAck,
 			hold          => hold,
 			new_calc      => newCalc,
 			writeEnable   => writeEnable,
@@ -242,6 +272,22 @@ begin
 			calcMax       => calcMax,
 			newMax        => newMax,
 			maxCounterOut => maxCounterOut
+		);
+
+	topFSM_inst : component topFSM
+		port map(
+			clk             => clk,
+			rst             => rst,
+			start           => start,
+			innerDone       => done,
+			innerStart      => innerStart,
+			innerDepth      => innerDepth,
+			innerXMax       => innerXMax,
+			innerYMax       => innerYMax,
+			innerTotFilters => innerTotFilters,
+			innerConvFC     => innerConvFC,
+			inOutRam        => inOutRam,
+			innerDoneAck    => innerDoneAck
 		);
 
 	GEN_MAXPOOL : for I in 0 to (NrOfInputs - 1) generate
