@@ -12,11 +12,15 @@ package ConfigVHDL is
 
 	constant layerInputDepth  : LayerConsantArray       := (3, 32, 64);
 	constant layerWidthHeight : LayerConsantArray       := (28, 14, 7);
-	constant layerTotFilters  : LayerConsantArray       := (32, 64, 0);
+	constant layerTotFilters  : LayerConsantArray       := (32, 64, 10);
 	constant layerConvFC      : LayerConsantConvFCArray := ('0', '0', '1');
+    
+    constant ram_0_depth : integer := 64;
+    constant ram_1_depth : integer := 32;
+
 
 end package ConfigVHDL;
-
+ 
 package body ConfigVHDL is
 
 end package body ConfigVHDL;
