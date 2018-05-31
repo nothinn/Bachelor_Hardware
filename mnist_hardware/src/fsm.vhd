@@ -142,6 +142,7 @@ begin
 				end if;
 
 			when prepFC =>
+				new_calcint_next <= '1';
 				xint_next       <= 2;
 				yint_next       <= 2;
 				fcWDepthin_next <= 0;
