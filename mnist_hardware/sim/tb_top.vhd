@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.NUMERIC_STD.all;
 
-    use IEEE.MATH_REAL.all;
+use IEEE.MATH_REAL.all;
 
 library work;
 use work.Types.all;
@@ -11,7 +11,7 @@ use work.ConfigVHDL.all;
 
 library std;
 use std.textio.all;
- 
+
 entity tb_top is
 end entity;
 
@@ -29,15 +29,17 @@ architecture rtl of tb_top is
 
 	component MACFullFilter is
 		port(
-			clk     : in  std_logic;
-			rst     : in  std_logic;
-			depth   : in  unsigned(6 downto 0);
-			Filter  : in  unsigned(4 downto 0);
-			layer   : in  integer range 0 to NrOfLayers - 1;
-			input   : in  MAC_inputs;
-			hold    : in  std_logic;
-			newCalc : in  std_logic;
-			result  : out MAC_result
+			clk      : in  std_logic;
+			rst      : in  std_logic;
+			depth    : in  unsigned(6 downto 0);
+			depthFC  : in  unsigned(8 downto 0);
+			convOrFC : in  std_logic;
+			Filter   : in  unsigned(5 downto 0);
+			layer    : in  integer range 0 to NrOfLayers - 1;
+			input    : in  MAC_inputs;
+			hold     : in  std_logic;
+			newCalc  : in  std_logic;
+			result   : out MAC_result
 		);
 	end component;
 
@@ -51,7 +53,7 @@ architecture rtl of tb_top is
 			MaxResult  : out MAC_result
 		);
 	end component maxpool;
-/*
+	/*
 	component resultRam is
 		generic(
 			depth_size : integer := 32;
@@ -81,12 +83,14 @@ architecture rtl of tb_top is
 			inputYMax     : in  unsigned(5 downto 0);
 			totalFilters  : in  unsigned(6 downto 0);
 			doneAck       : in  std_logic;
+			convOrFC      : in  std_logic;
 			hold          : out std_logic;
 			new_calc      : out std_logic;
 			writeEnable   : out std_logic;
 			x             : out integer;
 			y             : out integer;
 			depth         : out integer;
+			fcWDepth      : out integer;
 			filter        : out integer;
 			done          : out std_logic;
 			calcMax       : out std_logic;
@@ -107,33 +111,31 @@ architecture rtl of tb_top is
 			innerYMax       : out unsigned(5 downto 0);
 			innerTotFilters : out unsigned(6 downto 0);
 			innerConvFC     : out std_logic;
-			layerCount      : out unsigned(layerCounterWidth-1 downto 0);
+			layerCount      : out unsigned(layerCounterWidth - 1 downto 0);
 			innerDoneAck    : out std_logic
 		);
-    end component topFSM;
+	end component topFSM;
 
-
-    component topRam is
-        generic (
-            depth_size :  integer := 64;
-            size       :  integer := 5;
-            ram_size   :  integer := 28;
-            NrOfInputs :  integer := 8
-        );
-        port (
-            clk        : in std_logic;
-            rst        : in std_logic;
-            ena        : in std_logic;
-            wea        : in std_logic;
-            depth      : in integer range 0 to depth_size - 1;
-            addressX   : in integer range 0 to ram_size - 1;
-            addressY   : in integer range 0 to ram_size - 1;
-            dia        : in ram_input(NrOfINputs - 1 downto 0);
-            doa        : out MAC_inputs;
-            ready      : out std_logic
-        );
-    end component;
-
+	component topRam is
+		generic(
+			depth_size : integer := 64;
+			size       : integer := 5;
+			ram_size   : integer := 28;
+			NrOfInputs : integer := 8
+		);
+		port(
+			clk      : in  std_logic;
+			rst      : in  std_logic;
+			ena      : in  std_logic;
+			wea      : in  std_logic;
+			depth    : in  integer range 0 to depth_size - 1;
+			addressX : in  integer range 0 to ram_size - 1;
+			addressY : in  integer range 0 to ram_size - 1;
+			dia      : in  ram_input(NrOfINputs - 1 downto 0);
+			doa      : out MAC_inputs;
+			ready    : out std_logic
+		);
+	end component;
 
 	constant CLK_PERIOD : time      := 10 ns;
 	signal clk          : std_logic;
@@ -143,7 +145,7 @@ architecture rtl of tb_top is
 	--signal input_weight_mac: MAC_weights;
 	--signal output_mac: ram_input(7 downto 0);
 
-	signal filter : unsigned(4 downto 0);
+	signal filter : unsigned(5 downto 0);
 
 	signal addressX, addressX_reg, addressX_reg2, addressXOut, addressXOut_reg, addressXOut_reg1, addressXOut_reg2 : integer := 0;
 	signal addressY, addressY_reg, addressY_reg2, addressYOut, addressYOut_reg, addressYOut_reg1, addressYOut_reg2 : integer := 0;
@@ -155,7 +157,10 @@ architecture rtl of tb_top is
 
 	signal start : std_logic := '0';
 
-	signal depth : unsigned(6 downto 0); 
+	signal depthWFCInt : integer;
+
+	signal depth    : unsigned(6 downto 0);
+	signal depthWFC : unsigned(8 downto 0);
 
 	signal MAC_ARRAY, MAX_ARRAY : ram_input(7 downto 0);
 
@@ -166,7 +171,7 @@ architecture rtl of tb_top is
 
 	signal pre_filter, filter_reg, filter_reg1 : integer;
 
-	type filter_array is array (7 downto 0) of unsigned(4 downto 0);
+	type filter_array is array (7 downto 0) of unsigned(5 downto 0);
 
 	signal filter_input    : filter_array;
 	signal innerStart      : std_logic;
@@ -175,39 +180,32 @@ architecture rtl of tb_top is
 	signal innerYMax       : unsigned(5 downto 0);
 	signal innerTotFilters : unsigned(6 downto 0);
 	signal innerConvFC     : std_logic;
-	signal layerCount      : unsigned(layerCounterWidth-1 downto 0);
+	signal layerCount      : unsigned(layerCounterWidth - 1 downto 0);
 	signal innerDoneAck    : std_logic;
-    
-    
-    
-  
-    
-    
-    --Signals for ram
-    signal ram_ena        : std_logic_vector(1 downto 0);
-    signal ram_wea        : std_logic_vector(1 downto 0);
-    
-    signal ram_depth0 : integer range 0 to ram_0_depth - 1 ;
-    signal ram_depth1 : integer range 0 to ram_1_depth - 1 ;
 
-    signal ram_addressX0 : integer range 0 to layerWidthHeight(1)-1;
-    signal ram_addressY0 : integer range 0 to layerWidthHeight(1)-1;
+	--Signals for ram
+	signal ram_ena : std_logic_vector(1 downto 0);
+	signal ram_wea : std_logic_vector(1 downto 0);
 
-    signal ram_addressX1 : integer range 0 to layerWidthHeight(2)-1;
-    signal ram_addressY1 : integer range 0 to layerWidthHeight(2)-1;
+	signal ram_depth0 : integer range 0 to ram_0_depth - 1;
+	signal ram_depth1 : integer range 0 to ram_1_depth - 1;
 
-    signal ram_data_in   : ram_input(NrOfINputs - 1 downto 0);
-    
-    signal ram_data_out0 : MAC_inputs;
-    signal ram_data_out1 : MAC_inputs;
-    signal ram_data_out_first : MAC_inputs;
-    
-    signal ram_ready : std_logic_vector(1 downto 0);
+	signal ram_addressX0 : integer range 0 to layerWidthHeight(1) - 1;
+	signal ram_addressY0 : integer range 0 to layerWidthHeight(1) - 1;
 
-    
+	signal ram_addressX1 : integer range 0 to layerWidthHeight(2) - 1;
+	signal ram_addressY1 : integer range 0 to layerWidthHeight(2) - 1;
 
-    
-        
+	signal ram_data_in : ram_input(NrOfINputs - 1 downto 0);
+
+	signal ram_data_out0      : MAC_inputs;
+	signal ram_data_out1      : MAC_inputs;
+	signal ram_data_out_first : MAC_inputs;
+
+	signal ram_ready : std_logic_vector(1 downto 0);
+
+	signal resultReg, resultReg_next : ResultArray;
+
 begin
 
 	process(clk, maxCounterOut(0 downto 0), maxCounterOut(1 downto 1), rst)
@@ -222,11 +220,15 @@ begin
 			addressY_reg  <= 0;
 			addressY_reg2 <= 0;
 
-			filter_reg <= 0;
+			filter_reg  <= 0;
 			filter_reg1 <= 0;
 
 			maxCounterOutx <= maxCounterOut(0 downto 0);
-			maxCounterOuty <= maxCounterOut(1 downto 1); 
+			maxCounterOuty <= maxCounterOut(1 downto 1);
+
+			for I in 0 to 9 loop
+				resultReg(I) <= (others => '0');
+			end loop;
 
 		elsif rising_edge(clk) then
 			writeEnableReg <= writeEnable;
@@ -250,95 +252,92 @@ begin
 			maxCounterOutx <= maxCounterOut(0 downto 0);
 			maxCounterOuty <= maxCounterOut(1 downto 1);
 
+			for I in 0 to 9 loop
+				resultReg(I) <= resultReg_next(I);
+			end loop;
+
 		end if;
 	end process;
-    
-    topRam0_inst: topRam
-        generic map (
-            depth_size => LayerInputDepth(2),
-            size       => 5,
-            ram_size   => LayerWidthHeight(2),
-            NrOfInputs => 8
-        )
-        port map (
-            clk        => clk,
-            rst        => rst,
-            ena        => ram_ena(0),
-            wea        => ram_wea(0),
-            depth      => ram_depth0,
-            addressX   => ram_addressX0,
-            addressY   => ram_addressY0,
-            dia        => ram_data_in,
-            doa        => ram_data_out0,
-            ready      => ram_ready(0)
-        );
-    
-    topRam1_inst: topRam
-        generic map (
-            depth_size => LayerInputDepth(1),
-            size       => 5,
-            ram_size   => LayerWidthHeight(1),
-            NrOfInputs => 8
-        )
-        port map (
-            clk        => clk,
-            rst        => rst,
-            ena        => ram_ena(1),
-            wea        => ram_wea(1),
-            depth      => ram_depth1,
-            addressX   => ram_addressX1,
-            addressY   => ram_addressY1,
-            dia        => ram_data_in,
-            doa        => ram_data_out1,
-            ready      => ram_ready(1)
-        );
 
+	topRam0_inst : topRam
+		generic map(
+			depth_size => LayerInputDepth(2),
+			size       => 5,
+			ram_size   => LayerWidthHeight(2),
+			NrOfInputs => 8
+		)
+		port map(
+			clk      => clk,
+			rst      => rst,
+			ena      => ram_ena(0),
+			wea      => ram_wea(0),
+			depth    => ram_depth0,
+			addressX => ram_addressX0,
+			addressY => ram_addressY0,
+			dia      => ram_data_in,
+			doa      => ram_data_out0,
+			ready    => ram_ready(0)
+		);
 
-    
-    ram_ena <= "11";
-    
-    ram_data_in <= MAX_ARRAY;
-    
-    
-    
-    muxProcess: process(all) is
-    begin
-        if layerCount = 0 then-- to_unsigned(0,layerCount'length) then
-            input_mac <= ram_data_out_first;
-        elsif layerCount(0) = '0' then
-            input_mac <= ram_data_out0;
-        else
-            input_mac <= ram_data_out1;
-        end if;
-        
-        
-        if layerCount(0) = '0' then
-            ram_addressX0 <= addressX;
-            ram_addressY0 <= addressY;
-            ram_depth0 <= addressZ;
-            
-            ram_addressX1 <= addressXOut_reg1;
-            ram_addressY1 <= addressYOut_reg1;
-            ram_depth1 <= filter_reg1;
-            
-            
-            ram_wea(0) <= '0';
-            ram_wea(1) <= '1' and we_ram;
+	topRam1_inst : topRam
+		generic map(
+			depth_size => LayerInputDepth(1),
+			size       => 5,
+			ram_size   => LayerWidthHeight(1),
+			NrOfInputs => 8
+		)
+		port map(
+			clk      => clk,
+			rst      => rst,
+			ena      => ram_ena(1),
+			wea      => ram_wea(1),
+			depth    => ram_depth1,
+			addressX => ram_addressX1,
+			addressY => ram_addressY1,
+			dia      => ram_data_in,
+			doa      => ram_data_out1,
+			ready    => ram_ready(1)
+		);
 
-        else
-            ram_addressX1 <= addressX;
-            ram_addressY1 <= addressY;
-            ram_depth1 <= addressZ;
+	ram_ena <= "11";
 
-            ram_addressX0 <= addressXOut_reg1;
-            ram_addressY0 <= addressYOut_reg1;
-            ram_depth0 <= filter_reg1;
+	ram_data_in <= MAX_ARRAY;
 
-            
-            ram_wea(1) <= '0';
-            ram_wea(0) <= '1' and we_ram;
-        end if;
-    end process;
+	muxProcess : process(all) is
+	begin
+		if layerCount = 0 then          -- to_unsigned(0,layerCount'length) then
+			input_mac <= ram_data_out_first;
+		elsif layerCount(0) = '0' then
+			input_mac <= ram_data_out0;
+		else
+			input_mac <= ram_data_out1;
+		end if;
+
+		if layerCount(0) = '0' then
+			ram_addressX0 <= addressX;
+			ram_addressY0 <= addressY;
+			ram_depth0    <= addressZ;
+
+			ram_addressX1 <= addressXOut_reg1;
+			ram_addressY1 <= addressYOut_reg1;
+			ram_depth1    <= filter_reg1;
+
+			ram_wea(0) <= '0';
+			ram_wea(1) <= '1' and we_ram;
+
+		else
+			ram_addressX1 <= addressX;
+			ram_addressY1 <= addressY;
+			ram_depth1    <= addressZ;
+
+			ram_addressX0 <= addressXOut_reg1;
+			ram_addressY0 <= addressYOut_reg1;
+			ram_depth0    <= filter_reg1;
+
+			ram_wea(1) <= '0';
+			ram_wea(0) <= '1' and we_ram;
+		end if;
+	end process;
 
 	gen_romX : for x in -2 to 2 generate
 		gen_romY : for y in -2 to 2 generate
@@ -358,29 +357,31 @@ begin
 	process(all)
 	begin
 		for i in 0 to 7 loop
-			filter_input(i) <= filter + to_unsigned(I, 5);
+			filter_input(i) <= filter + to_unsigned(I, 6);
 		end loop;
 	end process;
 
 	GEN_MACFull : for I in 0 to 7 generate
 		MACFullFilter_inst : MACFullFilter
 			port map(
-				clk     => clk,
-				rst     => rst,
-				depth   => depth,
-				Filter  => filter_input(i),
-				layer   => to_integer(layercount),
-				input   => input_mac,
-				hold    => hold,
-				newCalc => newCalc,
-				result  => MAC_array(i)
+				clk      => clk,
+				rst      => rst,
+				depth    => depth,
+				depthFC  => depthWFC,
+				convOrFC => innerConvFC,
+				Filter   => filter_input(i),
+				layer    => to_integer(layercount),
+				input    => input_mac,
+				hold     => hold,
+				newCalc  => newCalc,
+				result   => MAC_array(i)
 			);
 	end generate;
 
-    --Divide by two because of maxpool. 
+	--Divide by two because of maxpool. 
 	addressXOut <= addressX/2;
 	addressYOut <= addressY/2;
-/*
+	/*
 	resultRam_inst : resultRam
 		generic map(
 			depth_size => 32,
@@ -409,18 +410,22 @@ begin
 			inputYMax     => innerYMax,
 			totalFilters  => innerTotFilters,
 			doneAck       => innerDoneAck,
+			convOrFC      => innerConvFC,
 			hold          => hold,
 			new_calc      => newCalc,
 			writeEnable   => writeEnable,
 			x             => addressX,
 			y             => addressY,
 			depth         => addressZ,
+			fcwDepth      => depthWFCInt,
 			filter        => pre_filter,
 			done          => done,
 			calcMax       => calcMax,
 			newMax        => newMax,
 			maxCounterOut => maxCounterOut
 		);
+
+	depthWFC <= to_unsigned(depthWFCInt, depthWFC'length);
 
 	topFSM_inst : component topFSM
 		port map(
@@ -451,7 +456,27 @@ begin
 
 	end generate GEN_MAXPOOL;
 
-	filter <= to_unsigned(pre_filter, 5);
+	filter <= to_unsigned(pre_filter, 6);
+
+	ResultLogic : process(all)
+	begin
+		for I in 0 to 9 loop
+			resultreg_next(I) <= resultReg(I);
+		end loop;
+
+		if (we_ram = '1') and (innerConvFC = '1') then
+			if filter_reg1 = 0 then
+				for I in 0 to 7 loop
+					resultreg_next(I) <= ram_data_in(I);
+				end loop;
+			else
+				for I in 0 to 1 loop
+					resultreg_next(filter_reg1 + I) <= ram_data_in(I);
+				end loop;
+			end if;
+		end if;
+
+	end process ResultLogic;
 
 	stimuli_p : process is
 	begin
@@ -462,8 +487,7 @@ begin
 		wait until rising_edge(clk) and done = '1';
 
 		report "DONE" severity failure;
-		
-		
+
 	end process;
 
 	clock_p : process is
