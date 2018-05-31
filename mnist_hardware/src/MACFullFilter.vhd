@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.types.all;
-use work.configVHDL.all
+use work.configVHDL.all;
 --NOTER
 /*
 Ændre Fullfiltermac til at outputtet er 16 bit unsigned. (ReLu).
@@ -15,8 +15,9 @@ entity MACFullFilter is
 	port(
 		clk     : in  std_logic;
 		rst     : in  std_logic;
-		depth   : in  unsigned(1 downto 0); --Should be changed when weightROM can take deeper filters
+		depth   : in  unsigned(6 downto 0); --Should be changed when weightROM can take deeper filters
 		Filter  : in  unsigned(4 downto 0);
+		layer   : in  integer range 0 to NrOfLayers-1;
 		input   : in  MAC_inputs;
 		hold    : in  std_logic;
 		newCalc : in  std_logic;
@@ -60,6 +61,7 @@ architecture RTL of MACFullFilter is
 		port(
 			clk      : in  std_logic;
 			rst      : in  std_logic;
+			layer    : in  integer range 0 to NrOfLayers - 1;
 			filter   : in  integer range 0 to 31;
 			addressZ : in  integer range 0 to 2;
 			output   : out signed(7 downto 0)
@@ -70,6 +72,7 @@ architecture RTL of MACFullFilter is
         port (
             clk: in  std_logic;
             rst: in  std_logic;
+            layer: in integer range 0 to NrOfLayers - 1 ;
             filter: in integer range 0 to 31;
             output: out signed(7 downto 0)
         );
@@ -97,6 +100,7 @@ begin
             port map(
                 clk => clk,
                 rst => rst,
+                layer => layer,
                 filter => to_integer(filter_reg2),
                 output => biasout
             );
@@ -111,6 +115,7 @@ begin
 				port map(
 					clk      => clk,
 					rst      => rst,
+					layer    => layer,
 					filter   => to_integer(filter),
 					addressZ => to_integer(depth),
 					output   => weights(I*5 + J)
