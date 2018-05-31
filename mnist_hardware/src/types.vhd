@@ -24,6 +24,8 @@ package Types is
 	type MAC_inputs is array (24 downto 0) of unsigned((fixInputleft + fixInputright - 1) downto 0);
 	subtype MAC_result is unsigned((fixInputleft + fixInputright - 1) downto 0);
 
+	type ResultArray is array (9 downto 0) of unsigned((fixInputleft + fixInputright - 1) downto 0); 
+
 	subtype MAC_output is signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 5 - 1) downto 0);
 	subtype signedNeuron is signed(fixInputleft + fixInputright downto 0);
 	type signedNeuronsType is array (24 downto 0) of signedNeuron;
