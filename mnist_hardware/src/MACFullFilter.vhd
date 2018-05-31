@@ -13,15 +13,17 @@ Add bias før relu.
 */
 entity MACFullFilter is
 	port(
-		clk     : in  std_logic;
-		rst     : in  std_logic;
-		depth   : in  unsigned(6 downto 0); --Should be changed when weightROM can take deeper filters
-		Filter  : in  unsigned(4 downto 0);
-		layer   : in  integer range 0 to NrOfLayers-1;
-		input   : in  MAC_inputs;
-		hold    : in  std_logic;
-		newCalc : in  std_logic;
-		result  : out MAC_result
+		clk      : in  std_logic;
+		rst      : in  std_logic;
+		depth    : in  unsigned(6 downto 0);
+		depthFC  : in  unsigned(8 downto 0);
+		convOrFC : in  std_logic;
+		Filter   : in  unsigned(5 downto 0);
+		layer    : in  integer range 0 to NrOfLayers - 1;
+		input    : in  MAC_inputs;
+		hold     : in  std_logic;
+		newCalc  : in  std_logic;
+		result   : out MAC_result
 	);
 end entity MACFullFilter;
 
@@ -34,15 +36,15 @@ architecture RTL of MACFullFilter is
 	signal AddResToSaturationCheck, newCalcMux, holdMux : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 5 + 1 - 1) downto 0);
 	signal concatRight                                  : signed(fixWeightright + inferredWeightBits - 1 downto 0);
 	signal concatLeft                                   : signed((fixWeightleft - 1) + 5 - 1 downto 0);
-	signal newcalc_reg, newcalc_reg0, hold_reg                         : std_logic;
+	signal newcalc_reg, newcalc_reg0, hold_reg          : std_logic;
 	signal bias                                         : signedNeuron;
-	signal addBiasOut									: signedNeuron;
-	
-	
-	signal biasOut                                      : signed(7 downto 0);
-	
-	signal filter_reg, filter_reg1, filter_reg2 : unsigned(4 downto 0);
-	
+	signal addBiasOut                                   : signedNeuron;
+	signal ROMDepth                                     : unsigned(8 downto 0);
+
+	signal biasOut : signed(7 downto 0);
+
+	signal filter_reg, filter_reg1, filter_reg2 : unsigned(5 downto 0);
+
 	component MAC
 		port(
 			clk     : in  std_logic;
@@ -63,27 +65,22 @@ architecture RTL of MACFullFilter is
 			rst      : in  std_logic;
 			layer    : in  integer range 0 to NrOfLayers - 1;
 			filter   : in  integer range 0 to 31;
-			addressZ : in  integer range 0 to 2;
+			addressZ : in  integer range 0 to 255;
 			output   : out signed(7 downto 0)
 		);
 	end component;
 
-    component biasRom is
-        port (
-            clk: in  std_logic;
-            rst: in  std_logic;
-            layer: in integer range 0 to NrOfLayers - 1 ;
-            filter: in integer range 0 to 31;
-            output: out signed(7 downto 0)
-        );
-     end component;
-
-    
+	component biasRom is
+		port(
+			clk    : in  std_logic;
+			rst    : in  std_logic;
+			layer  : in  integer range 0 to NrOfLayers - 1;
+			filter : in  integer range 0 to 31;
+			output : out signed(7 downto 0)
+		);
+	end component;
 
 begin
-
-
-
 
 	MAC1 : MAC
 		port map(
@@ -93,17 +90,15 @@ begin
 			neurons => inputs,
 			results => macRes
 		);
-		
-		
-		
-    biasRom1 : biasRom
-            port map(
-                clk => clk,
-                rst => rst,
-                layer => layer,
-                filter => to_integer(filter_reg2),
-                output => biasout
-            );
+
+	biasRom1 : biasRom
+		port map(
+			clk    => clk,
+			rst    => rst,
+			layer  => layer,
+			filter => to_integer(filter_reg2),
+			output => biasout
+		);
 
 	makeROMsy : for I in 0 to 4 generate
 		makeROMsx : for J in 0 to 4 generate
@@ -117,7 +112,7 @@ begin
 					rst      => rst,
 					layer    => layer,
 					filter   => to_integer(filter),
-					addressZ => to_integer(depth),
+					addressZ => to_integer(ROMDepth),
 					output   => weights(I*5 + J)
 				);
 		end generate makeROMsx;
@@ -143,14 +138,14 @@ begin
 					holdMux <= '1' & macRes;
 				end if;
 		end case;
-		
-		case biasOut(biasOut'length-1) is
-		      when '1' =>
-		          bias <= "111111111" & biasOut;
-		      when others =>
-		          bias <= "000000000" & biasOut;
-        end case;
-        
+
+		case biasOut(biasOut'length - 1) is
+			when '1' =>
+				bias <= "111111111" & biasOut;
+			when others =>
+				bias <= "000000000" & biasOut;
+		end case;
+
 		case newCalc_reg is
 			when '1' =>
 				newCalcMux <= (others => '0');
@@ -163,7 +158,14 @@ begin
 					newCalcMux <= '1' & concatLeft & layerResReg & concatRight;
 				end if;
 
+		end case;
 
+		case convOrFC is
+			when '1' =>
+				ROMDepth <= depthFC;
+
+			when others =>
+				ROMDepth <= "00" & depth;
 		end case;
 
 		--check for saturation
@@ -179,7 +181,7 @@ begin
 					nextLayerResReg <= '1' & "0000000000000000"; -- lowest possiple number is passed
 				end if;
 		end case;
-		
+
 		-- bias and reLU
 
 		addBiasOut <= layerResReg + bias;
@@ -188,30 +190,29 @@ begin
 		else
 			result <= unsigned(addBiasOut(addBiasOut'length - 2 downto 0));
 		end if;
-		
 
 	end process makeMuxLogic;
 
 	name : process(clk, rst) is
 	begin
 		if rst = '1' then
-			layerResReg <= X"0000" & "0";
+			layerResReg  <= X"0000" & "0";
 			newcalc_reg0 <= '0';
-			newcalc_reg <= '0';
-			hold_reg    <= '0';
-			filter_reg <= (others => '0');
-			filter_reg1 <= (others => '0');
-            filter_reg2 <= (others => '0');
-                        
+			newcalc_reg  <= '0';
+			hold_reg     <= '0';
+			filter_reg   <= (others => '0');
+			filter_reg1  <= (others => '0');
+			filter_reg2  <= (others => '0');
+
 		elsif rising_edge(clk) then
-			layerResReg <= nextLayerResReg;
+			layerResReg  <= nextLayerResReg;
 			newcalc_reg0 <= newcalc;
-			newcalc_reg <= newcalc_reg0;
-			hold_reg    <= hold;
-			filter_reg <= filter;
-			filter_reg1 <= filter_reg;
-            filter_reg2 <= filter_reg1;
-                        
+			newcalc_reg  <= newcalc_reg0;
+			hold_reg     <= hold;
+			filter_reg   <= filter;
+			filter_reg1  <= filter_reg;
+			filter_reg2  <= filter_reg1;
+
 		end if;
 	end process name;
 
