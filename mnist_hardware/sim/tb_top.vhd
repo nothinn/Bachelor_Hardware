@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.NUMERIC_STD.all;
 
+    use IEEE.MATH_REAL.all;
+
 library work;
 use work.Types.all;
 
@@ -29,8 +31,9 @@ architecture rtl of tb_top is
 		port(
 			clk     : in  std_logic;
 			rst     : in  std_logic;
-			depth   : in  unsigned(1 downto 0);
+			depth   : in  unsigned(6 downto 0);
 			Filter  : in  unsigned(4 downto 0);
+			layer   : in  integer range 0 to NrOfLayers - 1;
 			input   : in  MAC_inputs;
 			hold    : in  std_logic;
 			newCalc : in  std_logic;
@@ -152,7 +155,7 @@ architecture rtl of tb_top is
 
 	signal start : std_logic := '0';
 
-	signal depth : unsigned(1 downto 0);
+	signal depth : unsigned(6 downto 0); 
 
 	signal MAC_ARRAY, MAX_ARRAY : ram_input(7 downto 0);
 
@@ -204,8 +207,7 @@ architecture rtl of tb_top is
     
 
     
-
-    
+        
 begin
 
 	process(clk, maxCounterOut(0 downto 0), maxCounterOut(1 downto 1), rst)
@@ -367,6 +369,7 @@ begin
 				rst     => rst,
 				depth   => depth,
 				Filter  => filter_input(i),
+				layer   => to_integer(layercount),
 				input   => input_mac,
 				hold    => hold,
 				newCalc => newCalc,
@@ -459,7 +462,8 @@ begin
 		wait until rising_edge(clk) and done = '1';
 
 		report "DONE" severity failure;
-
+		
+		
 	end process;
 
 	clock_p : process is
