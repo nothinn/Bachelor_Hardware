@@ -8,7 +8,7 @@ entity biasRom is
     port (
         clk: in  std_logic;
         rst: in  std_logic;
-		layer: in integer range 0 to 2;
+		layer: in integer range 0 to 3;
 		filter: in integer range 0 to 63;
 
         output: out signed(7 downto 0)
@@ -91,7 +91,7 @@ begin
 						when others =>
 							output <= "11111110";
 						end case;
-				when others =>
+				when 1 =>
 					case filter is
 						when 0 =>
 							output <= "11110110";
@@ -221,6 +221,29 @@ begin
 							output <= "11111111";
 						when others =>
 							output <= "11111110";
+						end case;
+				when others =>
+					case filter is
+						when 0 =>
+							output <= "11111001";
+						when 1 =>
+							output <= "00010111";
+						when 2 =>
+							output <= "11111100";
+						when 3 =>
+							output <= "11111011";
+						when 4 =>
+							output <= "00000001";
+						when 5 =>
+							output <= "00000001";
+						when 6 =>
+							output <= "11111110";
+						when 7 =>
+							output <= "00001000";
+						when 8 =>
+							output <= "11110010";
+						when others =>
+							output <= "11111111";
 						end case;
             end case;
         end if;
