@@ -1,6 +1,6 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
-use IEEE.numeric_std.all;
+use IEEE.numeric_std.all; 
 
 entity fsm is
 	port(
@@ -160,7 +160,7 @@ begin
 
 					if xint + 5 > inputXMax then
 
-						if yint + 5 < inputYMax then
+						if yint + 5 > inputYMax then
 							state_next <= maxFC;
 						else
 							xint_next  <= 2;
