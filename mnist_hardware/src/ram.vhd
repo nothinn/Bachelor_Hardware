@@ -2,7 +2,7 @@ library IEEE;
     use IEEE.std_logic_1164.all;
     use IEEE.numeric_std.all;
     use work.Types.all;
-    use IEEE.MATH_REAL.all;
+    use IEEE.MATH_REAL.all;  
 entity ram is
     generic(
         depth: integer := 64;

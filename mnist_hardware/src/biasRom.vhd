@@ -4,7 +4,7 @@ library IEEE;
 
     use work.Types.all;
 
-entity biasRom is
+entity biasRom is 
     port (
         clk: in  std_logic;
         rst: in  std_logic;
