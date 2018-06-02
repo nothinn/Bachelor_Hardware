@@ -15,8 +15,8 @@ end entity MAC;
 
 architecture RTL of MAC is
 
-	type MAC_DSP_outputs is array (24 downto 0) of signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits) downto 0); -- the size of a product is is the size of the sum of the multiplier and the multiplicant 
-	type Weight_w_inferedbits_resized is array (24 downto 0) of signed((fixWeightleft + fixWeightright + inferredWeightBits - 1) downto 0);
+	type MAC_DSP_outputs is array (24 downto 0) of signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 1 + 1 - 1) downto 0); -- the size of a product is is the size of the sum of the multiplier and the multiplicant 
+	type Weight_w_inferedbits_resized is array (24 downto 0) of signed((fixWeightleft + fixWeightright + inferredWeightBits + 1 - 1) downto 0); -- plus 1 is to pad to match bit significance before mult
 	--signal weightI : MAC_weights;
 	--signal neuronsI : mac_inputs;
 
@@ -61,9 +61,9 @@ begin
 		infferBits : for I in 0 to 24 loop
 
 			if weight(I)(fixWeightleft + fixWeightright - 1) = '0' then
-				fullWeights(I) <= weight(I)(fixWeightleft + fixWeightright - 1 downto fixWeightright) & inferredBitsPos & weight(I)(fixWeightright - 1 downto 0);
+				fullWeights(I) <= weight(I)(fixWeightleft + fixWeightright - 1 downto fixWeightright) & inferredBitsPos & weight(I)(fixWeightright - 1 downto 0) & "0";
 			else
-				fullWeights(I) <= weight(I)(fixWeightleft + fixWeightright - 1 downto fixWeightright) & inferredBitsNeg & weight(I)(fixWeightright - 1 downto 0);
+				fullWeights(I) <= weight(I)(fixWeightleft + fixWeightright - 1 downto fixWeightright) & inferredBitsNeg & weight(I)(fixWeightright - 1 downto 0) & "0";
 			end if;
 			signedNeruons(I) <= "0" & signed(neurons(I)); --input is allways posative or zero
 		end loop infferBits;
