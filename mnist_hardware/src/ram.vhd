@@ -33,16 +33,23 @@ end entity;
 
 architecture rtl of ram is
    
-    shared variable RAM : mem_block((depth * integer((Ceil(real(width)/real(filter_width)))) **2 - 1) downto 0);
+    signal RAM : mem_block((depth * integer((Ceil(real(width)/real(filter_width)))) **2 - 1) downto 0);
 
 begin
     process(clk)
     begin
         if rising_edge(clk) then
             if ena = '1' then
-                doa <= ram(addra mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 ));
+                --doa <= ram(addra mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 ));
                 if wea = '1' then
-                    ram(addra) := dia;
+                    ram(addra) <= dia;
+                end if;
+            end if;
+            
+            if enb = '1' then
+                dob <= RAM(addrb mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 ));
+                if web = '1' then
+                    --ram(addrb) <= dib;
                 end if;
             end if;
         end if;
@@ -51,12 +58,7 @@ begin
     process(clk)
     begin
         if rising_edge(clk) then
-            if enb = '1' then
-                dob <= RAM(addrb mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 ));
-                if web = '1' then
-                    ram(addrb) := dib;
-                end if;
-            end if;
+
         end if;
     end process; 
 end architecture;
