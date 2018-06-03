@@ -170,9 +170,9 @@ begin
 
 		--check for saturation
 		case AddResToSaturationCheck(AddResToSaturationCheck'length - 1 downto (AddResToSaturationCheck'length - 1) - 1 - 5 - (fixWeightleft - 1)) is -- first -1 to have the extra bit possiple by the addition. secind -1 To look at the sign aswell
-			when (others => '1') =>     -- the result has not meet negative saturation
+			when (AddResToSaturationCheck(AddResToSaturationCheck'length - 1 downto (AddResToSaturationCheck'length - 1) - 1 - 5 - (fixWeightleft - 1))'range => '1') =>     -- the result has not meet negative saturation
 				nextLayerResReg <= AddResToSaturationCheck((AddResToSaturationCheck'length - 1) - 1 - 5 - (fixWeightleft - 1) downto fixWeightright + inferredWeightBits + 1);
-			when (others => '0') =>     -- the result has not meet posative saturation
+			when (AddResToSaturationCheck(AddResToSaturationCheck'length - 1 downto (AddResToSaturationCheck'length - 1) - 1 - 5 - (fixWeightleft - 1))'range => '0') =>     -- the result has not meet posative saturation
 				nextLayerResReg <= AddResToSaturationCheck((AddResToSaturationCheck'length - 1) - 1 - 5 - (fixWeightleft - 1) downto fixWeightright + inferredWeightBits + 1);
 			when others =>              -- saturation detected
 				if AddResToSaturationCheck(AddResToSaturationCheck'length - 1) = '0' then -- "overflow" saturation detected
