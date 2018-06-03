@@ -53,7 +53,7 @@ architecture rtl of topRam is
             addressY   : in integer range 0 to ram_size - 1;
             blocknr    : out integer range 0 to size ** 2 - 1;
             blockValid : out std_logic;
-            depth_addr : out integer range 0 to integer( depth_size * ((ceil(real(ram_size) / real(size)) ** 2) / NrOfInputs) ) - integer(1)
+            depth_addr : out integer range 0 to integer( real(depth_size) * ((ceil(real(ram_size) / real(size)) ** 2) / real(NrOfInputs)) ) - integer(1)
         );
     end component;
 
@@ -82,7 +82,7 @@ architecture rtl of topRam is
 
     type trans_block is array(integer range size**2-1 downto 0) of integer range 0 to size **2-1;
 
-    type trans_addr is array(integer range size**2-1 downto 0) of integer range 0 to integer(depth_size * (ceil(real(ram_size) / real(size) ) ** 2)) / NrOfInputs - 1;
+    type trans_addr is array(integer range size**2-1 downto 0) of integer range 0 to integer( real(depth_size) * ((ceil(real(ram_size) / real(size)) ** 2) / real(NrOfInputs)) ) - integer(1);
     
 
     signal blocknr_arr: trans_block;
@@ -90,9 +90,9 @@ architecture rtl of topRam is
     signal depth_addr_arr: trans_addr;
     signal depth_addr_arr2: trans_addr;
 
-    signal blocknr: integer range 0 to integer(depth_size * (ceil(real(ram_size) / real(size) ) ** 2)) / NrOfInputs - 1;
-    signal depth_addr: integer range 0 to integer(depth_size * (ceil(real(ram_size) / real(size) ) ** 2)) / NrOfInputs - 1;
-    signal depth_addr_added: integer range 0 to integer(depth_size * (ceil(real(ram_size) / real(size) ) ** 2)) / NrOfInputs - 1;
+    signal blocknr: integer range 0 to integer( real(depth_size) * ((ceil(real(ram_size) / real(size)) ** 2) / real(NrOfInputs)) ) - integer(1);
+    signal depth_addr: integer range 0 to integer( real(depth_size) * ((ceil(real(ram_size) / real(size)) ** 2) / real(NrOfInputs)) ) - integer(1);
+    signal depth_addr_added: integer range 0 to integer( real(depth_size) * ((ceil(real(ram_size) / real(size)) ** 2) / real(NrOfInputs)) ) - integer(1);
 
     signal latchedInput : ram_input(NrOfINputs - 1 downto 0);
     signal latchedDepth : integer range 0 to depth_size -1;
@@ -124,7 +124,7 @@ architecture rtl of topRam is
     signal addressY_reg: integer range 0 to ram_size-1;
 begin
     
-    process(clk) is
+    process(clk, rst) is
     begin
         
         if rst = '1' then
@@ -208,7 +208,7 @@ begin
     
     ramProcess: process (all) is
     begin
-        if ena = '1' then
+        --if ena = '1' then
             for x in -size/2 to size/2 loop
                 for y in -size/2 to size/2 loop
                  
@@ -219,10 +219,11 @@ begin
                     end if;
                 end loop;
             end loop;
-        end if;
+        --end if;
     end process;
 
     
+    --We make a latch here, because of the blockValid. Not perfect. Consider what to do.
     process(all) is
     begin
         for i in 0 to size**2-1 loop
