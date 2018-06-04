@@ -14,9 +14,6 @@ end hex_to_7segment;
 
 architecture behaviour of hex_to_7segment is
 
-
-
-
 signal tick_gen, tick_gen_next : unsigned(32 downto 0);
 
 signal tick_gen_two , tick_gen_two_next : unsigned (32 downto 0);
@@ -77,7 +74,7 @@ begin
     
     process(tick_gen_two)
     begin
-        if tick_gen_two = 1 then -- 00000 then
+        if tick_gen_two = 100000 then
             tick_gen_two_next <= (others => '0');
             tick_two <= '1';
         else
@@ -92,7 +89,6 @@ begin
             state_next <= state;
             -- State for multiplexing
                 case state is
-                    
                     when state1 =>
                         an <= "1110";
                         input <= value(3 downto 0);

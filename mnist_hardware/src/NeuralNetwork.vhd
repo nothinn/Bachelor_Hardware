@@ -9,7 +9,7 @@ library work;
 
 entity NeuralNetwork is
     port (
-        clk: in  std_logic;
+        clk_in: in  std_logic;
         start: in std_logic;
         rst: in  std_logic;
         number: in std_logic_vector(3 downto 0);
@@ -129,6 +129,14 @@ architecture rtl of NeuralNetwork is
             );
     end component;
     
+    component clk_wiz_0 is
+        port(
+        clk_out1 : out std_logic;
+        reset : in std_logic;
+        locked: out std_logic;
+        clk_in1: in std_logic);
+    end component;
+    
     
     signal input_mac : MAC_inputs;
 
@@ -201,8 +209,18 @@ architecture rtl of NeuralNetwork is
     signal value: std_logic_vector(15 downto 0);
     --signal segment : std_logic_vector(6 downto 0);
     --signal an : std_logic_vector(3 downto 0);
+    
+    signal clk : std_logic;
 begin
 
+
+    clock_inst : clk_wiz_0
+        port map(
+            clk_out1 => clk,
+            reset => '0',
+            locked => open,
+            clk_in1 => clk_in
+        );        
 
     process(all) is
     begin
