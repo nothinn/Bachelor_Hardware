@@ -224,14 +224,33 @@ begin
 
     
     --We make a latch here, because of the blockValid. Not perfect. Consider what to do.
-    process(all) is
+   /* process(all) is
     begin
         for i in 0 to size**2-1 loop
             if blockValid(i) = '1' then
                 depth_addr_arr(blocknr_arr(i)) <= depth_addr_arr2(i) + depth;
             end if;
         end loop;
+    end process;*/
+    
+    
+    --This implementation can be seen as a crossbar or as an OR gate network. Let synthesis tool decode it.
+    process(all) is
+    begin
+        for i in 0 to size**2-1 loop
+            depth_addr_arr(i) <= 0;
+        end loop;
+
+        for j in 0 to size**2-1 loop
+            if blockValid(j) = '1' then
+                depth_addr_arr(blocknr_arr(j)) <= depth_addr_arr2(j) + depth;
+            end if;
+        end loop;
     end process;
+
+    
+    
+    
     
 
     --Generate translators for all the outputs of portB.
