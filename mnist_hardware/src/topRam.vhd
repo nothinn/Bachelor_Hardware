@@ -87,7 +87,7 @@ architecture rtl of topRam is
 
     signal blocknr_arr: trans_block;
     signal blocknr_arr_reg: trans_block;
-    signal depth_addr_arr: trans_addr;
+    signal depth_addr_arr, depth_addr_arr_test: trans_addr;
     signal depth_addr_arr2: trans_addr;
 
     signal blocknr: integer range 0 to integer( real(depth_size) * ((ceil(real(ram_size) / real(size)) ** 2) / real(NrOfInputs)) ) - integer(1);
@@ -165,19 +165,19 @@ begin
 
 
     --This implementation can be seen as a crossbar or as an OR gate network. Let synthesis tool decode it.
-    /* This is tested and works in simulation.
+
     process(all) is
     begin
         for i in 0 to size**2-1 loop
-            depth_addr_arr(i) <= 0;
+            depth_addr_arr_test(i) <= 0;
         end loop;
 
         for j in 0 to size**2-1 loop
             if blockValid(j) = '1' then
-                depth_addr_arr(blocknr_arr(j)) <= depth_addr_arr2(j) + depth;
+                depth_addr_arr_test(blocknr_arr(j)) <= depth_addr_arr2(j) + depth;
             end if;
         end loop;
-    end process;*/
+    end process;
     
     gen_crossbar: 
     for i in 0 to size**2-1 generate
@@ -189,7 +189,7 @@ begin
                     translated_output(i)(j) <= 0;
                 else
                     if blocknr_arr(i) = j then
-                        translated_output(i)(j) <= depth_addr_arr2(j) + depth;
+                        translated_output(i)(j) <= depth_addr_arr2(i) + depth;
                     else
                         translated_output(i)(j) <= 0;
                     end if;
@@ -205,7 +205,7 @@ begin
         begin
             tmp := (others => '0');
             for j in 0 to size**2-1 loop
-                tmp := tmp OR to_unsigned(translated_output(i)(j),11);
+                tmp := tmp OR to_unsigned(translated_output(j)(i),11);
             end loop;
             
             depth_addr_arr(i) <= to_integer(tmp);
