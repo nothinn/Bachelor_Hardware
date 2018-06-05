@@ -132,8 +132,6 @@ architecture rtl of NeuralNetwork is
     component clk_wiz_0 is
         port(
         clk_out1 : out std_logic;
-        reset : in std_logic;
-        locked: out std_logic;
         clk_in1: in std_logic);
     end component;
     
@@ -217,8 +215,6 @@ begin
     clock_inst : clk_wiz_0
         port map(
             clk_out1 => clk,
-            reset => '0',
-            locked => open,
             clk_in1 => clk_in
         );        
 
