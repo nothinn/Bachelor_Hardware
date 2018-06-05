@@ -122,7 +122,97 @@ architecture rtl of topRam is
     
     signal addressX_reg: integer range 0 to ram_size-1;
     signal addressY_reg: integer range 0 to ram_size-1;
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    ------------------------------------
+    -- For OR-ing crossbar
+    ------------------------------------
+    type addr_result_type is array (integer range size**2-1 downto 0) of integer range 0 to integer( real(depth_size) * ((ceil(real(ram_size) / real(size)) ** 2) / real(NrOfInputs)) ) - integer(1);
+    type addr_result_arr_type is array (integer range size**2-1 downto 0) of addr_result_type;
+    
+    
+
+    signal translated_output : addr_result_arr_type;
+    
+    
+    
+    
+    
+    
+    
 begin
+    
+    
+    
+    --We make a latch here, because of the blockValid. Not perfect. Consider what to do.
+    /* process(all) is
+begin
+    for i in 0 to size**2-1 loop
+        if blockValid(i) = '1' then
+            depth_addr_arr(blocknr_arr(i)) <= depth_addr_arr2(i) + depth;
+        end if;
+    end loop;
+    end process;*/
+
+
+    --This implementation can be seen as a crossbar or as an OR gate network. Let synthesis tool decode it.
+    /* This is tested and works in simulation.
+    process(all) is
+    begin
+        for i in 0 to size**2-1 loop
+            depth_addr_arr(i) <= 0;
+        end loop;
+
+        for j in 0 to size**2-1 loop
+            if blockValid(j) = '1' then
+                depth_addr_arr(blocknr_arr(j)) <= depth_addr_arr2(j) + depth;
+            end if;
+        end loop;
+    end process;*/
+    
+    gen_crossbar: 
+    for i in 0 to size**2-1 generate
+        gen_crossbar2:
+        for j in 0 to size**2-1 generate
+            process(all) is
+            begin
+                if blockValid(i) = '0' then
+                    translated_output(i)(j) <= 0;
+                else
+                    if blocknr_arr(i) = j then
+                        translated_output(i)(j) <= depth_addr_arr2(j) + depth;
+                    else
+                        translated_output(i)(j) <= 0;
+                    end if;
+                end if;
+            end process;
+        end generate;
+    end generate;
+    
+    gen_crossbar_receive:
+    for i in 0 to size**2-1 generate
+        process(all) is 
+            variable tmp : unsigned(10 downto 0) ;
+        begin
+            tmp := (others => '0');
+            for j in 0 to size**2-1 loop
+                tmp := tmp OR to_unsigned(translated_output(i)(j),11);
+            end loop;
+            
+            depth_addr_arr(i) <= to_integer(tmp);
+        end process;
+    end generate;
+
+    
     
     process(clk, rst) is
     begin
@@ -223,30 +313,6 @@ begin
     end process;
 
     
-    --We make a latch here, because of the blockValid. Not perfect. Consider what to do.
-   /* process(all) is
-    begin
-        for i in 0 to size**2-1 loop
-            if blockValid(i) = '1' then
-                depth_addr_arr(blocknr_arr(i)) <= depth_addr_arr2(i) + depth;
-            end if;
-        end loop;
-    end process;*/
-    
-    
-    --This implementation can be seen as a crossbar or as an OR gate network. Let synthesis tool decode it.
-    process(all) is
-    begin
-        for i in 0 to size**2-1 loop
-            depth_addr_arr(i) <= 0;
-        end loop;
-
-        for j in 0 to size**2-1 loop
-            if blockValid(j) = '1' then
-                depth_addr_arr(blocknr_arr(j)) <= depth_addr_arr2(j) + depth;
-            end if;
-        end loop;
-    end process;
 
     
     
