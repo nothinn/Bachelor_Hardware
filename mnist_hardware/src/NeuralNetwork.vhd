@@ -14,12 +14,14 @@ entity NeuralNetwork is
         rst: in  std_logic;
         number: in std_logic_vector(3 downto 0);
         segment: out std_logic_vector(6 downto 0);
-        an: out std_logic_vector(3 downto 0)
+        an: out std_logic_vector(3 downto 0);
+        tx : out std_logic;
+        rx : in std_logic
     );
 end entity;
 
 architecture rtl of NeuralNetwork is
-    component FirstRom is
+   /* component FirstRom is
         port (
             clk      : in std_logic;
             addressX : in integer range 0 to 27;
@@ -28,7 +30,7 @@ architecture rtl of NeuralNetwork is
             output   : out unsigned(15 downto 0)
         );
     end component;
-    
+    */
     component MACFullFilter is
         port (
             clk      : in std_logic;
@@ -120,6 +122,30 @@ architecture rtl of NeuralNetwork is
         );
     end component;
     
+    component topFirstRam
+    	generic(
+    		depth_size : integer;
+    		size       : integer;
+    		ram_size   : integer;
+    		NrOfInputs : integer
+    	);
+    	port(
+    		clk       : in  std_logic;
+    		rst       : in  std_logic;
+    		ena       : in  std_logic;
+    		wea       : in  std_logic;
+    		deptha    : in  integer range 0 to depth_size - 1;
+    		addressXa : in  integer range 0 to ram_size - 1;
+    		addressYa : in  integer range 0 to ram_size - 1;
+    		depthb    : in  integer range 0 to depth_size - 1;
+    		addressXb : in  integer range 0 to ram_size - 1;
+    		addressYb : in  integer range 0 to ram_size - 1;
+    		dia       : in  ram_input(NrOfINputs - 1 downto 0);
+    		doa       : out MAC_inputs;
+    		ready     : out std_logic
+    	);
+    end component topFirstRam;
+    
     component hex_to_7segment is
     	port (	clk: in std_logic;
             reset: in std_logic;
@@ -134,6 +160,42 @@ architecture rtl of NeuralNetwork is
         clk_out1 : out std_logic;
         clk_in1: in std_logic);
     end component;
+    
+    component uart
+    	generic(
+    		baud            : positive;
+    		clock_frequency : positive
+    	);
+    	port(
+    		clock               : in  std_logic;
+    		reset               : in  std_logic;
+    		data_stream_in      : in  std_logic_vector(7 downto 0);
+    		data_stream_in_stb  : in  std_logic;
+    		data_stream_in_ack  : out std_logic;
+    		data_stream_out     : out std_logic_vector(7 downto 0);
+    		data_stream_out_stb : out std_logic;
+    		tx                  : out std_logic;
+    		rx                  : in  std_logic
+    	);
+    end component uart;
+    
+    component UartController
+    	port(
+    		clk                  : in  std_logic;
+    		rst                  : in  std_logic;
+    		uartDataStreamTx     : out std_logic_vector(7 downto 0);
+    		uartDataStreamTx_stb : out std_logic;
+    		uartDataStreamTx_ack : in  std_logic;
+    		uartDataStreamRx     : in  std_logic_vector(7 downto 0);
+    		uartDataStreamRx_stb : in  std_logic;
+    		uartToMem_en         : out std_logic;
+    		uartToMem_we         : out std_logic;
+    		uartToMem_AddrX      : out integer range 0 to layerWidthHeight(0) - 1;
+    		uartToMem_AddrY      : out integer range 0 to layerWidthHeight(0) - 1;
+    		uartToMem_AddrZ      : out integer range 0 to layerInputDepth(0) - 1;
+    		uartToMem_DataWrite  : out ram_input(0 downto 0)
+    	);
+    end component UartController;
     
     
     signal input_mac : MAC_inputs;
@@ -182,10 +244,14 @@ architecture rtl of NeuralNetwork is
     --Signals for ram
     signal ram_ena : std_logic_vector(1 downto 0);
     signal ram_wea : std_logic_vector(1 downto 0);
-
+	
+	signal ram_depthStart : integer range 0 to layerInputDepth(0) - 1;
     signal ram_depth0 : integer range 0 to ram_0_depth - 1;
     signal ram_depth1 : integer range 0 to ram_1_depth - 1;
-
+	
+	signal ram_addressXStart : integer range 0 to layerWidthHeight(0) - 1;
+    signal ram_addressYStart : integer range 0 to layerWidthHeight(0) - 1;
+    
     signal ram_addressX0 : integer range 0 to layerWidthHeight(1) - 1;
     signal ram_addressY0 : integer range 0 to layerWidthHeight(1) - 1;
 
@@ -199,16 +265,33 @@ architecture rtl of NeuralNetwork is
     signal ram_data_out_first : MAC_inputs;
     
     
+    -- Signals for uart controller
+    signal uartDataStreamTx : std_logic_vector(7 downto 0);
+    signal uartDataStreamTx_stb : std_logic;
+    signal uartDataStreamTx_ack : std_logic;
+    signal uartDataStreamRx : std_logic_vector(7 downto 0);
+    signal uartDataStreamRx_stb : std_logic;
+    --signal uartToMem_en : std_logic;
+    signal uartToMem_we : std_logic;
+    signal uartToMem_AddrX : integer range 0 to layerWidthHeight(0) - 1;
+    signal uartToMem_AddrY : integer range 0 to layerWidthHeight(0) - 1;
+    signal uartToMem_AddrZ : integer range 0 to layerInputDepth(0) - 1;
+    signal uartToMem_DataWrite : ram_input(0 downto 0);
+    
+    
+    
+    
     signal resultReg, resultReg_next : ResultArray;
     
-    
+    Signal clk : std_logic;
     
     
     signal value: std_logic_vector(15 downto 0);
     --signal segment : std_logic_vector(6 downto 0);
     --signal an : std_logic_vector(3 downto 0);
     
-    signal clk : std_logic;
+    
+    
 begin
 
 
@@ -302,7 +385,32 @@ begin
             doa      => ram_data_out1,
             ready    => open--ram_ready(1)
         );
+        
+        inputRam_inst : topFirstRam
+        	generic map(
+        		depth_size => layerInputDepth(0),
+        		size       => 5,
+        		ram_size   => layerWidthHeight(0),
+        		NrOfInputs => 1
+        	)
+        	port map(
+        		clk       => clk,
+        		rst       => rst,
+        		ena       => ram_ena(0),
+        		wea       => uartToMem_we,
+        		deptha    => uartToMem_AddrZ,
+        		addressXa => uartToMem_AddrX,
+        		addressYa => uartToMem_AddrY,
+        		depthb    => ram_depthStart,
+        		addressXb => ram_addressXStart,
+        		addressYb => ram_addressYStart,
+        		dia       => uartToMem_DataWrite,
+        		doa       => ram_data_out_first,
+        		ready     => open
+        	);
+        
     
+   /*  
     --This is to be subsituted with ram when ready.
     gen_romX : for x in -2 to 2 generate
         gen_romY : for y in -2 to 2 generate
@@ -316,7 +424,7 @@ begin
                 );
         end generate;
     end generate;
-    
+    */
     ----------------------------------------------------------------------------
     --        Multiplexer for handling the three ram blocks                   --
     ----------------------------------------------------------------------------   
@@ -329,7 +437,13 @@ begin
         else
             input_mac <= ram_data_out1;
         end if;
-
+		
+		
+		ram_addressXStart <= addressX;
+        ram_addressYStart <= addressY;
+        ram_depthStart    <= addressZ;
+			
+					
         if layerCount(0) = '0' then
             ram_addressX0 <= addressX;
             ram_addressY0 <= addressY;
@@ -445,7 +559,47 @@ begin
 
     end generate GEN_MAXPOOL;
     
+    ----------------------------------------------------------------------------
+    --                         Istantiating UART interface                    --
+    ----------------------------------------------------------------------------
+    uartController_inst : component UartController
+    	port map(
+    		clk                  => clk,
+    		rst                  => rst,
+    		uartDataStreamTx     => uartDataStreamTx,
+    		uartDataStreamTx_stb => uartDataStreamTx_stb,
+    		uartDataStreamTx_ack => uartDataStreamTx_ack,
+    		uartDataStreamRx     => uartDataStreamRx,
+    		uartDataStreamRx_stb => uartDataStreamRx_stb,
+    		uartToMem_en         => open,
+    		uartToMem_we         => uartToMem_we,
+    		uartToMem_AddrX      => uartToMem_AddrX,
+    		uartToMem_AddrY      => uartToMem_AddrY,
+    		uartToMem_AddrZ      => uartToMem_AddrZ,
+    		uartToMem_DataWrite  => uartToMem_DataWrite
+    	);
     
+    
+    ----------------------------------------------------------------------------
+    --                         Istantiating UART interface                    --
+    ----------------------------------------------------------------------------
+    
+    uart_Inst :entity work.uart
+    	generic map(
+    		baud            => 115200,
+    		clock_frequency => CLOCK_FREQ
+    	)
+    	port map(
+    		clock               => clk,
+    		reset               => rst,
+    		data_stream_in      => uartDataStreamTx,
+    		data_stream_in_stb  => uartDataStreamTx_stb,
+    		data_stream_in_ack  => uartDataStreamTx_ack,
+    		data_stream_out     => uartDataStreamRx,
+    		data_stream_out_stb => uartDataStreamRx_stb,
+    		tx                  => tx,
+    		rx                  => rx
+    	);
     
     ----------------------------------------------------------------------------
     --                         Logic for saving the results                   --
