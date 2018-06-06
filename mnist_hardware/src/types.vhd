@@ -19,6 +19,9 @@ package Types is
 	constant NrOfInputs : integer := 8;
 	
 	constant layerCounterWidth : integer := integer(ceil(log2(real(nrOfLayers))));
+	
+	constant CLOCK_FREQ : Integer := 25_000_000;
+	
 
 	type MAC_weights is array (24 downto 0) of signed((fixWeightleft + fixWeightright - 1) downto 0);
 	type MAC_inputs is array (24 downto 0) of unsigned((fixInputleft + fixInputright - 1) downto 0);
