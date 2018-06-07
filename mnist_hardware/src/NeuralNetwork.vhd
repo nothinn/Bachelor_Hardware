@@ -14,6 +14,15 @@ entity NeuralNetwork is
         rst: in  std_logic;
         number: in std_logic_vector(3 downto 0);
         segment: out std_logic_vector(6 downto 0);
+        
+        dia2: out MAC_result;
+        dob2: out MAC_result;
+        
+        addra2: out integer;
+        addrb2: out integer;
+
+        wea2: out std_logic;
+        
         an: out std_logic_vector(3 downto 0)
     );
 end entity;
@@ -116,6 +125,13 @@ architecture rtl of NeuralNetwork is
             addressY   : in integer range 0 to ram_size - 1;
             dia        : in ram_input(NrOfINputs - 1 downto 0);
             doa        : out MAC_inputs;
+            dia2: out MAC_result;
+            dob2: out MAC_result;
+
+            addra2: out integer;
+            addrb2: out integer;
+
+            wea2: out std_logic;
             ready      : out std_logic
         );
     end component;
@@ -300,6 +316,13 @@ begin
             addressY => ram_addressY1,
             dia      => ram_data_in,
             doa      => ram_data_out1,
+            dia2 => dia2,
+            dob2 => dob2,
+
+            addra2 => addra2,
+            addrb2 => addrb2,
+
+            wea2 => wea2,
             ready    => open--ram_ready(1)
         );
     

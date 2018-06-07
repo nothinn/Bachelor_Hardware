@@ -31,6 +31,15 @@ entity topRam is
         dia :  in ram_input(NrOfINputs - 1 downto 0);
         doa : out MAC_inputs;
         
+        
+        dia2: out MAC_result;
+        dob2: out MAC_result;
+
+        addra2: out integer;
+        addrb2: out integer;
+
+        wea2: out std_logic;
+        
         ready: out std_logic
 
     );
@@ -151,7 +160,7 @@ architecture rtl of topRam is
     
 begin
     
-    
+
     
     --We make a latch here, because of the blockValid. Not perfect. Consider what to do.
     /* process(all) is
@@ -284,6 +293,14 @@ begin
                 dob   => doa_int(i)
             );
     end generate;
+    
+    dia2 <= muxData;
+        dob2 <= doa_int(0);
+    
+    addra2 <= depth_addr_added;
+    addrb2 <= depth_addr_arr(0);
+
+    wea2 <= wea_int(0);
     
     
     
