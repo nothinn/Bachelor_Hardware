@@ -15,13 +15,13 @@ entity NeuralNetwork is
         number: in std_logic_vector(3 downto 0);
         segment: out std_logic_vector(6 downto 0);
         
-        dia2: out MAC_result;
+        /*dia2: out MAC_result;
         dob2: out MAC_result;
         
         addra2: out integer;
         addrb2: out integer;
 
-        wea2: out std_logic;
+        wea2: out std_logic;*/
         
         an: out std_logic_vector(3 downto 0)
     );
@@ -316,13 +316,13 @@ begin
             addressY => ram_addressY1,
             dia      => ram_data_in,
             doa      => ram_data_out1,
-            dia2 => dia2,
-            dob2 => dob2,
+            dia2 => open,--dia2,
+            dob2 => open,--dob2,
 
-            addra2 => addra2,
-            addrb2 => addrb2,
+            addra2 => open,--addra2,
+            addrb2 => open,--addrb2,
 
-            wea2 => wea2,
+            wea2 => open,--wea2,
             ready    => open--ram_ready(1)
         );
     

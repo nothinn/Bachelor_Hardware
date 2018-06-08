@@ -16,10 +16,10 @@ entity addressTranslator is
     port (
         addressX: in integer range 0 to ram_size-1;
         addressY: in integer range 0 to ram_size-1;
-        
+        valid: in std_logic;
         blocknr    : out integer range 0 to size ** 2 - 1;
         blockValid : out std_logic;
-        depth_addr : out integer range 0 to integer( real(depth_size) * ((ceil(real(ram_size) / real(size)) ** 2) / real(NrOfInputs)) ) - integer(1)
+        depth_addr : out integer 
         
     );
 end entity;
@@ -54,7 +54,7 @@ begin
     --Read from rom
     process(all)
     begin
-        if addressX < 0 or addressY < 0 or addressX >= ram_size or addressY >= ram_size then
+        if valid = '0' then
             blocknr <= 0;
             depth_addr <= 0;
             blockValid <= '0';

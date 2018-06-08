@@ -60,9 +60,10 @@ architecture rtl of topRam is
         port (
             addressX   : in integer range 0 to ram_size - 1;
             addressY   : in integer range 0 to ram_size - 1;
+            valid      : in std_logic;
             blocknr    : out integer range 0 to size ** 2 - 1;
             blockValid : out std_logic;
-            depth_addr : out integer range 0 to integer( real(depth_size) * ((ceil(real(ram_size) / real(size)) ** 2) / real(NrOfInputs)) ) - integer(1)
+            depth_addr : out integer
         );
     end component;
 
@@ -91,7 +92,7 @@ architecture rtl of topRam is
 
     type trans_block is array(integer range size**2-1 downto 0) of integer range 0 to size **2-1;
 
-    type trans_addr is array(integer range size**2-1 downto 0) of integer range 0 to integer( real(depth_size) * ((ceil(real(ram_size) / real(size)) ** 2) / real(NrOfInputs)) ) - integer(1);
+    type trans_addr is array(integer range size**2-1 downto 0) of integer ;
     
 
     signal blocknr_arr: trans_block;
@@ -99,9 +100,9 @@ architecture rtl of topRam is
     signal depth_addr_arr, depth_addr_arr_test: trans_addr;
     signal depth_addr_arr2: trans_addr;
 
-    signal blocknr: integer range 0 to integer( real(depth_size) * ((ceil(real(ram_size) / real(size)) ** 2) / real(NrOfInputs)) ) - integer(1);
-    signal depth_addr: integer range 0 to integer( real(depth_size) * ((ceil(real(ram_size) / real(size)) ** 2) / real(NrOfInputs)) ) - integer(1);
-    signal depth_addr_added: integer range 0 to integer( real(depth_size) * ((ceil(real(ram_size) / real(size)) ** 2) / real(NrOfInputs)) ) - integer(1);
+    signal blocknr: integer ;
+    signal depth_addr: integer;
+    signal depth_addr_added: integer;
 
     signal latchedInput : ram_input(NrOfINputs - 1 downto 0);
     signal latchedDepth : integer range 0 to depth_size -1;
@@ -145,7 +146,7 @@ architecture rtl of topRam is
     ------------------------------------
     -- For OR-ing crossbar
     ------------------------------------
-    type addr_result_type is array (integer range size**2-1 downto 0) of integer range 0 to integer( real(depth_size) * ((ceil(real(ram_size) / real(size)) ** 2) / real(NrOfInputs)) ) - integer(1);
+    type addr_result_type is array (integer range size**2-1 downto 0) of integer ;
     type addr_result_arr_type is array (integer range size**2-1 downto 0) of addr_result_type;
     
     
@@ -156,6 +157,8 @@ architecture rtl of topRam is
     signal ready2 : std_logic;
     
     
+    type block_valid_type is array(0 to size**2-1, 0 to size**2-1) of std_logic;
+    signal block_valid : block_valid_type;
     
     
 begin
@@ -323,7 +326,9 @@ begin
                  
                     if addressX_reg + x < 0 or addressX_reg + x >= ram_size or addressY_reg + y < 0 or addressY_reg + y >= ram_size then
                         doa((x+2)*size + (y+2)) <= (others => '0');
+                        block_valid(x+2,y+2) <= '0';
                     else
+                        block_valid(x+2,y+2) <= '1';
                         doa((x+2)*size + (y+2)) <= doa_int(blocknr_arr_reg((x+2)*size + y + 2));
                     end if;
                 end loop;
@@ -331,12 +336,6 @@ begin
         --end if;
     end process;
 
-    
-
-    
-    
-    
-    
 
     --Generate translators for all the outputs of portB.
     gen_trans: for I in 0 to size - 1 generate
@@ -351,6 +350,7 @@ begin
                 port map (
                     addressX   => addressX + (-size/2 + i),
                     addressY   => addressY + (-size/2 + j),
+                    valid      => block_valid(i, j),
                     blocknr    => blocknr_arr(I + j*size),
                     blockValid => blockValid(I + j*size),
                     depth_addr => depth_addr_arr2(I + j*size)
@@ -373,6 +373,7 @@ begin
         port map (
             addressX   => latchedAddrX,
             addressY   => latchedAddrY,
+            valid      => '1',
             blocknr    => blocknr,
             blockValid => open,
             depth_addr => depth_addr
