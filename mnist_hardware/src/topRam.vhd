@@ -153,7 +153,7 @@ architecture rtl of topRam is
     signal translated_output : addr_result_arr_type;
     
     
-    
+    signal ready2 : std_logic;
     
     
     
@@ -227,6 +227,7 @@ begin
     begin
         
         if rst = '1' then
+            ready2 <= '0';
             latchedInput <= (others => (others => '0'));
             latchedDepth <= 0;
             latchedAddrX <= 0;
@@ -240,6 +241,7 @@ begin
             
             blocknr_arr_reg <= (others => 0);
         elsif rising_edge(clk) then
+            ready2 <= ready;
             addressX_reg <= addressX;
             addressY_reg <= addressY;       
         
@@ -385,8 +387,9 @@ begin
         end loop;
         
         --enable the ram corresponding to the chosen block.
-        wea_int(blocknr) <= '1';
-        
+        if ready = '0' or  ready2 = '0' then
+            wea_int(blocknr) <= '1';
+        end if;
     end process;
 
 end architecture;
