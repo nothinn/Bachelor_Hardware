@@ -10,7 +10,10 @@ entity TestTopRAM is
 		rst      : in  std_logic;
 		start    : in  std_logic;
 		topDoa   : out MAC_inputs;
-		topReady : out std_logic
+		topReady : out std_logic;
+		xout     : out integer;
+		yout     : out integer;
+		depthout : out integer
 	);
 end entity TestTopRAM;
 
@@ -46,6 +49,10 @@ architecture RTL of TestTopRAM is
 	signal topdia                         : ram_input(NrOfINputs - 1 downto 0);
 
 begin
+
+    xout <= topx;
+    yout <= topy;
+    depthout <= topz;
 
 	inst_topram : topRam
 		generic map(
