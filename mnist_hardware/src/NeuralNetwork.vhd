@@ -570,7 +570,7 @@ begin
             depth_reg <= (others => '0');
             depthWFC_reg <= (others => '0');
             innerConvFC_reg <= '0';
-            filter_input_reg <= (others => '0');
+            filter_input_reg <= (others => (others => '0'));
             layercount_reg <= (others => '0');
             hold_reg <= '0';
             newCalc_reg <= '0';
