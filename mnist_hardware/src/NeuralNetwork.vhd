@@ -15,8 +15,6 @@ entity NeuralNetwork is
         number: in std_logic_vector(3 downto 0);
         segment: out std_logic_vector(6 downto 0);
         
-
-        
         an: out std_logic_vector(3 downto 0)
     );
 end entity;
@@ -152,7 +150,7 @@ architecture rtl of NeuralNetwork is
     
     signal addressX, addressX_reg, addressXOut, addressXOut_reg, addressXOut_reg1, addressXOut_reg2 : integer := 0;
     signal addressY, addressY_reg, addressYOut, addressYOut_reg, addressYOut_reg1, addressYOut_reg2 : integer := 0;
-    signal addressZ, addressZ_reg : integer range 0 to 31;
+    signal addressZ, addressZ_reg : integer;-- range 0 to 31;
     
     
     signal hold, newCalc, done, calcMax, newMax : std_logic;
