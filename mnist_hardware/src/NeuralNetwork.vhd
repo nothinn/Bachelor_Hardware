@@ -15,13 +15,7 @@ entity NeuralNetwork is
         number: in std_logic_vector(3 downto 0);
         segment: out std_logic_vector(6 downto 0);
         
-        /*dia2: out MAC_result;
-        dob2: out MAC_result;
-        
-        addra2: out integer;
-        addrb2: out integer;
 
-        wea2: out std_logic;*/
         
         an: out std_logic_vector(3 downto 0)
     );
@@ -201,7 +195,7 @@ architecture rtl of NeuralNetwork is
     signal depthWFC_reg : unsigned (8 downto 0);
     signal innerConvFC_reg : std_logic;
     signal filter_input_reg : filter_array;
-    signal layercount_reg : unsigned (layerCounterWidth-1 downto 0);
+    signal layercount_reg, layercount_reg2 : unsigned (layerCounterWidth-1 downto 0);
     signal hold_reg : std_logic;
     signal newCalc_reg : std_logic;
     
@@ -241,6 +235,7 @@ architecture rtl of NeuralNetwork is
     signal value: std_logic_vector(15 downto 0);
     --signal segment : std_logic_vector(6 downto 0);
     --signal an : std_logic_vector(3 downto 0);
+    
     
     signal clk : std_logic;
 begin
@@ -498,7 +493,7 @@ begin
             resultreg_next(I) <= resultReg(I);
         end loop;
 
-        if (we_ram_reg = '1') and (innerConvFC = '1') then
+        if (we_ram_reg = '1') and (innerConvFC_reg = '1') then
             if filter_reg2 = 0 then
                 for I in 0 to 7 loop
                     resultreg_next(I) <= ram_data_in(I);
@@ -511,6 +506,7 @@ begin
         end if;
 
     end process ResultLogic;
+    
     
     
     
@@ -564,14 +560,14 @@ begin
 
             --maxCounterOutx <= maxCounterOut(0 downto 0);
             --maxCounterOuty <= maxCounterOut(1 downto 1);
-            
-            
-            
+           
             depth_reg <= (others => '0');
             depthWFC_reg <= (others => '0');
             innerConvFC_reg <= '0';
             filter_input_reg <= (others => (others => '0'));
             layercount_reg <= (others => '0');
+            layercount_reg2 <= (others => '0');
+                        
             hold_reg <= '0';
             newCalc_reg <= '0';
             
@@ -586,10 +582,11 @@ begin
             end loop;
 
         elsif rising_edge(clk) then
+        
             writeEnableReg <= writeEnable;
             we_ram         <= writeEnableReg;
             
-            we_ram_reg <= '1';
+            we_ram_reg <= we_ram;
 
             addressX_reg  <= addressX;
             --addressX_reg2 <= addressX_reg;
@@ -617,6 +614,8 @@ begin
             innerConvFC_reg <= innerconvFC;
             filter_input_reg <= filter_input;
             layercount_reg <= layercount;
+            layercount_reg2 <= layercount_reg;
+                        
             hold_reg <= hold;
             newCalc_reg <= newCalc;
 

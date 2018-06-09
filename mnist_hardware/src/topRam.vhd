@@ -233,7 +233,7 @@ begin
     begin
         
         if rst = '1' then
-            ready2 <= '0';
+            ready2 <= '1';
             latchedInput <= (others => (others => '0'));
             latchedDepth <= 0;
             latchedAddrX <= 0;
@@ -416,7 +416,7 @@ begin
     --We look at the translated address and decode if it should be a write enable.
     process(all) is
     begin
-        if rising_edge(clk) then
+        --if rising_edge(clk) then
             --Set we to low as default.
             for i in 0 to size**2 - 1 loop
                 wea_int(i) <= '0';
@@ -428,7 +428,7 @@ begin
             else
                 wea_int(blocknr) <= '0';
             end if;
-        end if;
+        --end if;
     end process;
     
     
