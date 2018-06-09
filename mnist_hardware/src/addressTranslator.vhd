@@ -14,6 +14,7 @@ entity addressTranslator is
         NrOfInputs: integer := 8
 );
     port (
+        clk : in std_logic;
         addressX: in integer range 0 to ram_size-1;
         addressY: in integer range 0 to ram_size-1;
         valid: in std_logic;
@@ -54,14 +55,16 @@ begin
     --Read from rom
     process(all)
     begin
-        if valid = '0' then
-            blocknr <= 0;
-            depth_addr <= 0;
-            blockValid <= '0';
-        else
-            blockValid <= '1';
-            blocknr <= rom_blocknr(addressX)(addressY);
-            depth_addr <= rom_depth_addr(addressX)(addressY);
+        if rising_Edge(clk) then
+            if valid = '0' then
+                blocknr <= 0;
+                depth_addr <= 0;
+                blockValid <= '0';
+            else
+                blockValid <= '1';
+                blocknr <= rom_blocknr(addressX)(addressY);
+                depth_addr <= rom_depth_addr(addressX)(addressY);
+            end if;
         end if;
     end process;
 end architecture;
