@@ -58,6 +58,7 @@ architecture rtl of topRam is
             NrOfInputs :  integer := 8
         );
         port (
+            clk        : in std_logic;
             addressX   : in integer range 0 to ram_size - 1;
             addressY   : in integer range 0 to ram_size - 1;
             valid      : in std_logic;
@@ -132,13 +133,15 @@ architecture rtl of topRam is
     
     signal addressX_reg: integer range 0 to ram_size-1;
     signal addressY_reg: integer range 0 to ram_size-1;
+    signal addressX_reg2: integer range 0 to ram_size-1;
+    signal addressY_reg2: integer range 0 to ram_size-1;
     
     
+    signal testValid : std_logic;
+    signal testX : integer;
     
     
-    
-    
-    
+    signal depthReg :  integer range 0 to depth_size-1;
     
     
     
@@ -177,7 +180,7 @@ begin
 
 
     --This implementation can be seen as a crossbar or as an OR gate network. Let synthesis tool decode it.
-
+/*
     process(all) is
     begin
         for i in 0 to size**2-1 loop
@@ -190,7 +193,7 @@ begin
             end if;
         end loop;
     end process;
-    
+    */
     gen_crossbar: 
     for i in 0 to size**2-1 generate
         gen_crossbar2:
@@ -201,7 +204,7 @@ begin
                     translated_output(i)(j) <= 0;
                 else
                     if blocknr_arr(i) = j then
-                        translated_output(i)(j) <= depth_addr_arr2(i) + depth;
+                        translated_output(i)(j) <= depth_addr_arr2(i) + depthReg;
                     else
                         translated_output(i)(j) <= 0;
                     end if;
@@ -240,15 +243,20 @@ begin
             
             addressX_reg <= 0;
             addressY_reg <= 0;
-                        
+            addressX_reg2 <= 0;
+            addressY_reg2 <= 0;
+            depthReg <= 0;
             
             blocknr_arr_reg <= (others => 0);
         elsif rising_edge(clk) then
             ready2 <= ready;
             addressX_reg <= addressX;
-            addressY_reg <= addressY;       
+            addressY_reg <= addressY;
+            addressX_reg2 <= addressX_reg;
+            addressY_reg2 <= addressY_reg;       
         
             blocknr_arr_reg <= blocknr_arr;
+            depthReg <= depth;
         
             if wea  = '1' then
                 latchedInput <= dia;
@@ -324,17 +332,41 @@ begin
             for x in -size/2 to size/2 loop
                 for y in -size/2 to size/2 loop
                  
-                    if addressX_reg + x < 0 or addressX_reg + x >= ram_size or addressY_reg + y < 0 or addressY_reg + y >= ram_size then
-                        doa((x+2)*size + (y+2)) <= (others => '0');
-                        block_valid(x+2,y+2) <= '0';
+                    if addressX_reg2 + x < 0 or addressX_reg2 + x >= ram_size or addressY_reg2 + y < 0 or addressY_reg2 + y >= ram_size then
+                        doa((x+2) + size*(y+2)) <= (others => '0');
                     else
-                        block_valid(x+2,y+2) <= '1';
-                        doa((x+2)*size + (y+2)) <= doa_int(blocknr_arr_reg((x+2)*size + y + 2));
+                        doa((x+2) + size*(y+2)) <= doa_int(blocknr_arr_reg((x+2) + (y + 2)*size));
                     end if;
                 end loop;
             end loop;
         --end if;
     end process;
+
+
+    translateValidProcess: process (all) is
+    begin
+        --if ena = '1' then
+            for x in -size/2 to size/2 loop
+                for y in -size/2 to size/2 loop
+                    if x = 2 then
+                        testx <= addressx + x;
+                        if (addressX + x) < 0 or (addressX + x) >= ram_size then
+                            testvalid <= '0';
+                        else
+                            testvalid <= '1';
+                        end if;
+                    end if;
+                    if (addressX + x) < 0 or (addressX + x) >= ram_size or (addressY + y) < 0 or (addressY + y) >= ram_size  then
+                        block_valid(x+2,y+2) <= '0';
+                    else
+                        block_valid(x+2,y+2) <= '1';
+                    end if;
+                end loop;
+            end loop;
+        --end if;
+    end process;
+
+
 
 
     --Generate translators for all the outputs of portB.
@@ -348,6 +380,7 @@ begin
                     NrOfInputs => NrOfInputs
                 )
                 port map (
+                    clk        => clk,
                     addressX   => addressX + (-size/2 + i),
                     addressY   => addressY + (-size/2 + j),
                     valid      => block_valid(i, j),
@@ -371,6 +404,7 @@ begin
                 NrOfInputs => NrOfInputs
         )
         port map (
+            clk        => clk,
             addressX   => latchedAddrX,
             addressY   => latchedAddrY,
             valid      => '1',
@@ -382,15 +416,21 @@ begin
     --We look at the translated address and decode if it should be a write enable.
     process(all) is
     begin
-        --Set we to low as default.
-        for i in 0 to size**2 - 1 loop
-            wea_int(i) <= '0';
-        end loop;
-        
-        --enable the ram corresponding to the chosen block.
-        if ready = '0' or  ready2 = '0' then
-            wea_int(blocknr) <= '1';
+        if rising_edge(clk) then
+            --Set we to low as default.
+            for i in 0 to size**2 - 1 loop
+                wea_int(i) <= '0';
+            end loop;
+            
+            --enable the ram corresponding to the chosen block.
+            if ready = '0' or  ready2 = '0' then
+                wea_int(blocknr) <= '1';
+            else
+                wea_int(blocknr) <= '0';
+            end if;
         end if;
     end process;
+    
+    
 
 end architecture;
