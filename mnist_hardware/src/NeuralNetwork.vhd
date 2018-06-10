@@ -20,6 +20,21 @@ entity NeuralNetwork is
 end entity;
 
 architecture rtl of NeuralNetwork is
+
+      attribute DONT_TOUCH : string;
+  attribute DONT_TOUCH of  topRam0_inst : label is "TRUE";
+  attribute DONT_TOUCH of  topRam1_inst : label is "TRUE";
+  attribute DONT_TOUCH of  muxProcess : label is "TRUE";
+  attribute DONT_TOUCH of  fsm_inst : label is "TRUE";
+  attribute DONT_TOUCH of  topfsm_inst : label is "TRUE";
+  attribute DONT_TOUCH of  GEN_MACFull : label is "TRUE";
+  attribute DONT_TOUCH of   ResultLogic: label is "TRUE";
+   
+    
+      
+      
+    
+
     component FirstRom is
         port (
             clk      : in std_logic;
@@ -212,11 +227,11 @@ architecture rtl of NeuralNetwork is
     signal ram_depth0 : integer range 0 to ram_0_depth - 1;
     signal ram_depth1 : integer range 0 to ram_1_depth - 1;
 
-    signal ram_addressX0 : integer range 0 to layerWidthHeight(1) - 1;
-    signal ram_addressY0 : integer range 0 to layerWidthHeight(1) - 1;
+    signal ram_addressX0 : integer range 0 to layerWidthHeight(2) - 1;
+    signal ram_addressY0 : integer range 0 to layerWidthHeight(2) - 1;
 
-    signal ram_addressX1 : integer range 0 to layerWidthHeight(2) - 1;
-    signal ram_addressY1 : integer range 0 to layerWidthHeight(2) - 1;
+    signal ram_addressX1 : integer range 0 to layerWidthHeight(1) - 1;
+    signal ram_addressY1 : integer range 0 to layerWidthHeight(1) - 1;
 
     signal ram_data_in : ram_input(NrOfINputs - 1 downto 0);
 
