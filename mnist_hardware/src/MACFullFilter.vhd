@@ -12,6 +12,9 @@ use work.configVHDL.all;
 Add bias før relu.
 */
 entity MACFullFilter is
+    generic(		
+        depth_offset : unsigned(2 downto 0) := "000"
+    );
 	port(
 		clk      : in  std_logic;
 		rst      : in  std_logic;
@@ -58,13 +61,14 @@ architecture RTL of MACFullFilter is
 	component weightsRom is
 		generic(
 			addressX : integer range 0 to 4;
-			addressY : integer range 0 to 4
+			addressY : integer range 0 to 4;
+			depth_offset : unsigned(2 downto 0) := "000"
 		);
 		port(
 			clk      : in  std_logic;
 			rst      : in  std_logic;
 			layer    : in  integer range 0 to NrOfLayers - 1;
-			filter   : in  integer range 0 to 31;
+			filterin : in  unsigned(5 downto 3);
 			addressZ : in  integer range 0 to 255;
 			output   : out signed(7 downto 0)
 		);
@@ -105,13 +109,14 @@ begin
 			weightsRom_inst : weightsRom
 				generic map(
 					addressX => J,
-					addressY => I
+					addressY => I,
+					depth_offset => depth_offset
 				)
 				port map(
 					clk      => clk,
 					rst      => rst,
 					layer    => layer,
-					filter   => to_integer(filter),
+					filterin => filter(5 downto 3),
 					addressZ => to_integer(ROMDepth),
 					output   => weights(I*5 + J)
 				);

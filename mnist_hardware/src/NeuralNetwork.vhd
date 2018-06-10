@@ -31,6 +31,9 @@ architecture rtl of NeuralNetwork is
     end component;
     
     component MACFullFilter is
+        generic(
+            depth_offset : unsigned(2 downto 0) := "000"
+        );
         port (
             clk      : in std_logic;
             rst      : in std_logic;
@@ -397,6 +400,9 @@ begin
     ----------------------------------------------------------------------------    
     GEN_MACFull : for I in 0 to 7 generate
         MACFullFilter_inst : MACFullFilter
+            generic map(
+                depth_offset => to_unsigned(I,3)
+            )
             port map(
                 clk      => clk,
                 rst      => rst,
@@ -527,8 +533,8 @@ begin
     end process;
     
     --Divide by two because of maxpool. This may have to change in synthesis.
-    addressXOut <= addressX_reg/2;
-    addressYOut <= addressY_Reg/2;
+    addressXOut <= to_integer(to_unsigned(addressX_reg,11)(10 downto 1));
+    addressYOut <=  to_integer(to_unsigned(addressY_reg,11)(10 downto 1));
     
     
     depthWFC <= to_unsigned(depthWFCInt, depthWFC'length);
