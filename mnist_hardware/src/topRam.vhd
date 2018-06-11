@@ -31,15 +31,6 @@ entity topRam is
         dia :  in ram_input(NrOfINputs - 1 downto 0);
         doa : out MAC_inputs;
         
-        
-        dia2: out MAC_result;
-        dob2: out MAC_result;
-
-        addra2: out integer;
-        addrb2: out integer;
-
-        wea2: out std_logic;
-        
         ready: out std_logic
 
     );
@@ -165,6 +156,13 @@ architecture rtl of topRam is
     signal translated_output : addr_result_arr_type;
     
     
+    
+    
+    signal blocknr_reg : integer;
+    signal depth_addr_reg : integer;
+    
+    
+    
     signal ready2 : std_logic;
     
     
@@ -256,6 +254,9 @@ begin
             depthReg <= 0;
             
             blocknr_arr_reg <= (others => 0);
+            
+            blocknr_reg <= 0;
+            depth_addr_reg <= 0;
         elsif rising_edge(clk) then
             ready2 <= ready;
             addressX_reg <= addressX;
@@ -272,6 +273,8 @@ begin
                 latchedAddrX <= addressX;
                 latchedAddrY <= addressY;
                 
+                blocknr_reg <= blocknr;
+                depth_addr_reg <= depth_addr;
 
 
                 counter <= 0;
@@ -284,15 +287,7 @@ begin
     ready <= '1' when counter = NrOfInputs - 1 else '0';
     
     
-    process(all) is
-    begin
-        if counter < NrOfInputs then
-            
-        else
-            
-        end if;
-    end process;
-    
+
     ramGen : for i in 0 to size **2 - 1 generate
         ram_inst: ram
             generic map (
@@ -315,17 +310,11 @@ begin
             );
     end generate;
     
-    dia2 <= muxData;
-        dob2 <= doa_int(0);
-    
-    addra2 <= depth_addr_added;
-    addrb2 <= depth_addr_arr(0);
 
-    wea2 <= wea_int(0);
     
     
     
-    depth_addr_added <= depth_addr + counter + latchedDepth;
+    depth_addr_added <= depth_addr_reg + counter + latchedDepth;
     
     process(all) is
     begin
@@ -356,14 +345,6 @@ begin
         --if ena = '1' then
             for x in -size/2 to size/2 loop
                 for y in -size/2 to size/2 loop
-                    if x = 2 then
-                        testx <= addressx + x;
-                        if (addressX + x) < 0 or (addressX + x) >= ram_size then
-                            testvalid <= '0';
-                        else
-                            testvalid <= '1';
-                        end if;
-                    end if;
                     if (addressX + x) < 0 or (addressX + x) >= ram_size or (addressY + y) < 0 or (addressY + y) >= ram_size  then
                         block_valid(x+2,y+2) <= '0';
                     else
@@ -413,11 +394,11 @@ begin
         )
         port map (
             clk        => clk,
-            addressX   => latchedAddrX,
-            addressY   => latchedAddrY,
+            addressX   => addressX,
+            addressY   => addressY,
             valid      => '1',
             blocknr    => blocknr,
-            blockValid => open,
+            blockValid => wea,
             depth_addr => depth_addr
         );
    
@@ -432,13 +413,10 @@ begin
             
             --enable the ram corresponding to the chosen block.
             if ready = '0' or  ready2 = '0' then
-                wea_int(blocknr) <= '1';
+                wea_int(blocknr_reg) <= '1';
             else
-                wea_int(blocknr) <= '0';
+                wea_int(blocknr_reg) <= '0';
             end if;
         --end if;
     end process;
-    
-    
-
 end architecture;
