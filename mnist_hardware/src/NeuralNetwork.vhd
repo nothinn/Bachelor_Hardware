@@ -135,13 +135,6 @@ architecture rtl of NeuralNetwork is
             addressY   : in integer range 0 to ram_size - 1;
             dia        : in ram_input(NrOfINputs - 1 downto 0);
             doa        : out MAC_inputs;
-            dia2: out MAC_result;
-            dob2: out MAC_result;
-
-            addra2: out integer;
-            addrb2: out integer;
-
-            wea2: out std_logic;
             ready      : out std_logic
         );
     end component;
