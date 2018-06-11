@@ -79,7 +79,7 @@ architecture RTL of MACFullFilter is
 			clk    : in  std_logic;
 			rst    : in  std_logic;
 			layer  : in  integer range 0 to NrOfLayers - 1;
-			filter : in  integer range 0 to 31;
+			filter : in  integer range 0 to 63;
 			output : out signed(7 downto 0)
 		);
 	end component;
