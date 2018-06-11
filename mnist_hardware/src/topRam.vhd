@@ -396,9 +396,9 @@ begin
             clk        => clk,
             addressX   => addressX,
             addressY   => addressY,
-            valid      => '1',
+            valid      => wea,
             blocknr    => blocknr,
-            blockValid => wea,
+            blockValid => open,
             depth_addr => depth_addr
         );
    
