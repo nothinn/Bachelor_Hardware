@@ -266,6 +266,12 @@ begin
         
             blocknr_arr_reg <= blocknr_arr;
             depthReg <= depth;
+            
+            if counter = 0 then
+
+                blocknr_reg <= blocknr;
+                depth_addr_reg <= depth_addr;
+            end if;
         
             if wea  = '1' then
                 latchedInput <= dia;
@@ -273,8 +279,6 @@ begin
                 latchedAddrX <= addressX;
                 latchedAddrY <= addressY;
                 
-                blocknr_reg <= blocknr;
-                depth_addr_reg <= depth_addr;
 
 
                 counter <= 0;
@@ -313,8 +317,41 @@ begin
 
     
     
+    process(all) is
+    begin
+        if counter = 0 then
+            depth_addr_added <= depth_addr + counter + latchedDepth;
+            --We look at the translated address and decode if it should be a write enable.
+
+            for i in 0 to size**2 - 1 loop
+                wea_int(i) <= '0';
+            end loop;
+
+            --enable the ram corresponding to the chosen block.
+            if ready = '0' or  ready2 = '0' then
+                wea_int(blocknr) <= '1';
+            else
+                wea_int(blocknr) <= '0';
+            end if;
+            
+        else
+            depth_addr_added <= depth_addr_reg + counter + latchedDepth;
+            
+            for i in 0 to size**2 - 1 loop
+                wea_int(i) <= '0';
+            end loop;
+
+            --enable the ram corresponding to the chosen block.
+            if ready = '0' or  ready2 = '0' then
+                wea_int(blocknr_reg) <= '1';
+            else
+                wea_int(blocknr_reg) <= '0';
+            end if;
+        end if;
+    end process;
     
-    depth_addr_added <= depth_addr_reg + counter + latchedDepth;
+    
+    
     
     process(all) is
     begin
@@ -402,21 +439,5 @@ begin
             depth_addr => depth_addr
         );
    
-    --We look at the translated address and decode if it should be a write enable.
-    process(all) is
-    begin
-        --if rising_edge(clk) then
-            --Set we to low as default.
-            for i in 0 to size**2 - 1 loop
-                wea_int(i) <= '0';
-            end loop;
-            
-            --enable the ram corresponding to the chosen block.
-            if ready = '0' or  ready2 = '0' then
-                wea_int(blocknr_reg) <= '1';
-            else
-                wea_int(blocknr_reg) <= '0';
-            end if;
-        --end if;
-    end process;
+
 end architecture;
