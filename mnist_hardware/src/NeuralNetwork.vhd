@@ -345,13 +345,6 @@ begin
             addressY => ram_addressY1,
             dia      => ram_data_in,
             doa      => ram_data_out1,
-            dia2 => open,--dia2,
-            dob2 => open,--dob2,
-
-            addra2 => open,--addra2,
-            addrb2 => open,--addrb2,
-
-            wea2 => open,--wea2,
             ready    => open--ram_ready(1)
         );
     
