@@ -601,7 +601,7 @@ begin
     ----------------------------------------------------------------------------
     --                         Istantiating UART interface                    --
     ----------------------------------------------------------------------------
-    uartController_inst : component UartController
+    uartController_inst : UartController
     	port map(
     		clk                  => clk,
     		rst                  => rst,
@@ -623,7 +623,7 @@ begin
     --                         Istantiating UART interface                    --
     ----------------------------------------------------------------------------
     
-    uart_Inst :entity work.uart
+    uart_Inst : uart
     	generic map(
     		baud            => 115200,
     		clock_frequency => CLOCK_FREQ
