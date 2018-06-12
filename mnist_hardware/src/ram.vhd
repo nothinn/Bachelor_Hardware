@@ -47,7 +47,7 @@ begin
             end if;
             
             if enb = '1' then
-                dob <= RAM(addrb mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 ));
+                dob <= RAM(addrb); --mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 ));
                 if web = '1' then
                     --ram(addrb) <= dib;
                 end if;

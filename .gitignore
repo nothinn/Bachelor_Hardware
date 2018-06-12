@@ -20,6 +20,10 @@ V3S_project/
 Sigasi/
 mnist_hardware/src/.project
 mnist_hardware/NeuralNetwork
+mnist_hardware/testTopRam
+mnist_hardware/testtopram2
+mnist_hardware/testTranslator
+mnist_hardware/FullSystemV2
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

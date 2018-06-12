@@ -21,7 +21,22 @@ entity NeuralNetwork is
 end entity;
 
 architecture rtl of NeuralNetwork is
-   /* component FirstRom is
+
+  --attribute DONT_TOUCH : string;
+  --attribute DONT_TOUCH of  topRam0_inst : label is "TRUE";
+  --attribute DONT_TOUCH of  topRam1_inst : label is "TRUE";
+  --attribute DONT_TOUCH of  muxProcess : label is "TRUE";
+  --attribute DONT_TOUCH of  fsm_inst : label is "TRUE";
+  --attribute DONT_TOUCH of  topfsm_inst : label is "TRUE";
+  --attribute DONT_TOUCH of  GEN_MACFull : label is "TRUE";
+  --attribute DONT_TOUCH of   ResultLogic: label is "TRUE";
+   
+    
+      
+      
+    
+
+    /*component FirstRom is
         port (
             clk      : in std_logic;
             addressX : in integer range 0 to 27;
@@ -32,6 +47,9 @@ architecture rtl of NeuralNetwork is
     end component;
     */
     component MACFullFilter is
+        generic(
+            depth_offset : unsigned(2 downto 0) := "000"
+        );
         port (
             clk      : in std_logic;
             rst      : in std_logic;
@@ -204,7 +222,7 @@ architecture rtl of NeuralNetwork is
     
     signal addressX, addressX_reg, addressXOut, addressXOut_reg, addressXOut_reg1, addressXOut_reg2 : integer := 0;
     signal addressY, addressY_reg, addressYOut, addressYOut_reg, addressYOut_reg1, addressYOut_reg2 : integer := 0;
-    signal addressZ : integer range 0 to 31;
+    signal addressZ, addressZ_reg : integer;-- range 0 to 31;
     
     
     signal hold, newCalc, done, calcMax, newMax : std_logic;
@@ -241,6 +259,21 @@ architecture rtl of NeuralNetwork is
     signal innerDoneAck    : std_logic;
     
     
+    
+    
+    signal depth_reg : unsigned(6 downto 0);
+    signal depthWFC_reg : unsigned (8 downto 0);
+    signal innerConvFC_reg : std_logic;
+    signal filter_input_reg : filter_array;
+    signal layercount_reg, layercount_reg2 : unsigned (layerCounterWidth-1 downto 0);
+    signal hold_reg : std_logic;
+    signal newCalc_reg : std_logic;
+    
+    
+    
+    signal newMax_reg : std_logic;
+    signal calcMax_reg :std_logic;
+    
     --Signals for ram
     signal ram_ena : std_logic_vector(1 downto 0);
     signal ram_wea : std_logic_vector(1 downto 0);
@@ -252,11 +285,11 @@ architecture rtl of NeuralNetwork is
 	signal ram_addressXStart : integer range 0 to layerWidthHeight(0) - 1;
     signal ram_addressYStart : integer range 0 to layerWidthHeight(0) - 1;
     
-    signal ram_addressX0 : integer range 0 to layerWidthHeight(1) - 1;
-    signal ram_addressY0 : integer range 0 to layerWidthHeight(1) - 1;
+    signal ram_addressX0 : integer range 0 to layerWidthHeight(2) - 1;
+    signal ram_addressY0 : integer range 0 to layerWidthHeight(2) - 1;
 
-    signal ram_addressX1 : integer range 0 to layerWidthHeight(2) - 1;
-    signal ram_addressY1 : integer range 0 to layerWidthHeight(2) - 1;
+    signal ram_addressX1 : integer range 0 to layerWidthHeight(1) - 1;
+    signal ram_addressY1 : integer range 0 to layerWidthHeight(1) - 1;
 
     signal ram_data_in : ram_input(NrOfINputs - 1 downto 0);
 
@@ -281,17 +314,19 @@ architecture rtl of NeuralNetwork is
     
     
     
+    signal we_ram_reg : std_logic;
     signal resultReg, resultReg_next : ResultArray;
     
     Signal clk : std_logic;
     
+    signal filter_reg2 : integer;
     
     signal value: std_logic_vector(15 downto 0);
     --signal segment : std_logic_vector(6 downto 0);
     --signal an : std_logic_vector(3 downto 0);
     
     
-    
+    signal clk : std_logic;
 begin
 
 
@@ -415,11 +450,11 @@ begin
     gen_romX : for x in -2 to 2 generate
         gen_romY : for y in -2 to 2 generate
             FirstRom_inst : FirstRom
-                port map(
+                port map( --Reg to match ram
                     clk      => clk,
-                    addressX => (addressX + x),
-                    addressY => (addressY + y),
-                    addressZ => addressZ,
+                    addressX => (addressX_reg + x),
+                    addressY => (addressY_reg + y),
+                    addressZ => addressZ_reg,
                     output   => ram_data_out_first((x + 2) + (y + 2)*5)
                 );
         end generate;
@@ -444,17 +479,18 @@ begin
         ram_depthStart    <= addressZ;
 			
 					
-        if layerCount(0) = '0' then
+
+        if layerCount_reg(0) = '0' then
             ram_addressX0 <= addressX;
             ram_addressY0 <= addressY;
             ram_depth0    <= addressZ;
 
             ram_addressX1 <= addressXOut_reg1;
             ram_addressY1 <= addressYOut_reg1;
-            ram_depth1    <= filter_reg1;
+            ram_depth1    <= filter_reg2;
 
             ram_wea(0) <= '0';
-            ram_wea(1) <= '1' and we_ram;
+            ram_wea(1) <= '1' and we_ram_reg;
 
         else
             ram_addressX1 <= addressX;
@@ -463,10 +499,10 @@ begin
 
             ram_addressX0 <= addressXOut_reg1;
             ram_addressY0 <= addressYOut_reg1;
-            ram_depth0    <= filter_reg1;
+            ram_depth0    <= filter_reg2;
 
             ram_wea(1) <= '0';
-            ram_wea(0) <= '1' and we_ram;
+            ram_wea(0) <= '1' and we_ram_reg;
         end if;
     end process;
     
@@ -477,17 +513,20 @@ begin
     ----------------------------------------------------------------------------    
     GEN_MACFull : for I in 0 to 7 generate
         MACFullFilter_inst : MACFullFilter
+            generic map(
+                depth_offset => to_unsigned(I,3)
+            )
             port map(
                 clk      => clk,
                 rst      => rst,
-                depth    => depth,
-                depthFC  => depthWFC,
-                convOrFC => innerConvFC,
-                Filter   => filter_input(i),
-                layer    => to_integer(layercount),
+                depth    => depth_reg,
+                depthFC  => depthWFC_reg,
+                convOrFC => innerConvFC_reg,
+                Filter   => filter_input_reg(i),
+                layer    => to_integer(layercount_reg),
                 input    => input_mac,
-                hold     => hold,
-                newCalc  => newCalc,
+                hold     => hold_reg,
+                newCalc  => newCalc_reg,
                 result   => MAC_array(i)
             );
     end generate;
@@ -552,8 +591,8 @@ begin
                 clk        => clk,
                 rst        => rst,
                 convResult => MAC_array(I),
-                newMax     => newMax,
-                calcMax    => calcMax,
+                newMax     => newMax_reg,
+                calcMax    => calcMax_reg,
                 MaxResult  => MAX_array(I)
             );
 
@@ -611,19 +650,20 @@ begin
             resultreg_next(I) <= resultReg(I);
         end loop;
 
-        if (we_ram = '1') and (innerConvFC = '1') then
-            if filter_reg1 = 0 then
+        if (we_ram_reg = '1') and (innerConvFC_reg = '1') then
+            if filter_reg2 = 0 then
                 for I in 0 to 7 loop
                     resultreg_next(I) <= ram_data_in(I);
                 end loop;
             else
                 for I in 0 to 1 loop
-                    resultreg_next(filter_reg1 + I) <= ram_data_in(I);
+                    resultreg_next(filter_reg2 + I) <= ram_data_in(I);
                 end loop;
             end if;
         end if;
 
     end process ResultLogic;
+    
     
     
     
@@ -646,8 +686,8 @@ begin
     end process;
     
     --Divide by two because of maxpool. This may have to change in synthesis.
-    addressXOut <= addressX/2;
-    addressYOut <= addressY/2;
+    addressXOut <= to_integer(to_unsigned(addressX_reg,11)(10 downto 1));
+    addressYOut <=  to_integer(to_unsigned(addressY_reg,11)(10 downto 1));
     
     
     depthWFC <= to_unsigned(depthWFCInt, depthWFC'length);
@@ -668,20 +708,42 @@ begin
 
             addressY_reg  <= 0;
             --addressY_reg2 <= 0;
+            
+            addressZ_reg <= 0;
 
             filter_reg  <= 0;
             filter_reg1 <= 0;
+            filter_reg2 <= 0;
 
             --maxCounterOutx <= maxCounterOut(0 downto 0);
             --maxCounterOuty <= maxCounterOut(1 downto 1);
+           
+            depth_reg <= (others => '0');
+            depthWFC_reg <= (others => '0');
+            innerConvFC_reg <= '0';
+            filter_input_reg <= (others => (others => '0'));
+            layercount_reg <= (others => '0');
+            layercount_reg2 <= (others => '0');
+                        
+            hold_reg <= '0';
+            newCalc_reg <= '0';
+            
+            
+            newMax_reg <= '0';
+            calcMax_reg <= '0';
+            
+            we_ram_reg <= '0';
 
             for I in 0 to 9 loop
                 resultReg(I) <= (others => '0');
             end loop;
 
         elsif rising_edge(clk) then
+        
             writeEnableReg <= writeEnable;
             we_ram         <= writeEnableReg;
+            
+            we_ram_reg <= we_ram;
 
             addressX_reg  <= addressX;
             --addressX_reg2 <= addressX_reg;
@@ -689,6 +751,7 @@ begin
             addressY_reg  <= addressY;
             --addressY_reg2 <= addressY_reg;
 
+            addressZ_reg <= addressZ;
             addressXOut_reg  <= addressXOut;
             addressXOut_reg1 <= addressXOut_reg;
 
@@ -697,10 +760,26 @@ begin
 
             filter_reg  <= pre_filter;
             filter_Reg1 <= filter_reg;
-
+            filter_reg2 <= filter_reg1;
             --maxCounterOutx <= maxCounterOut(0 downto 0);
             --maxCounterOuty <= maxCounterOut(1 downto 1);
+            
+            
+            
+            depth_reg <= depth;
+            depthWFC_reg <=depthWFC;
+            innerConvFC_reg <= innerconvFC;
+            filter_input_reg <= filter_input;
+            layercount_reg <= layercount;
+            layercount_reg2 <= layercount_reg;
+                        
+            hold_reg <= hold;
+            newCalc_reg <= newCalc;
 
+
+            newMax_reg <= newMax;
+            calcMax_reg <= calcMax;
+            
             for I in 0 to 9 loop
                 resultReg(I) <= resultReg_next(I);
             end loop;

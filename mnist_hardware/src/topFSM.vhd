@@ -73,7 +73,7 @@ begin
 
 	end process;
 	
-	process(clk)
+	process(clk,rst)
 	begin
 		if rst = '1' then
 			state <= idle;
