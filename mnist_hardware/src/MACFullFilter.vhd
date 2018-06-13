@@ -14,7 +14,7 @@ Add bias f�r relu.
 */
 entity MACFullFilter is
     generic(		
-        depth_offset : unsigned(natural(log2(real(nrOfInputs))) - 1 downto 0) := (others => '1')
+        filter_offset : unsigned(natural(log2(real(nrOfInputs))) - 1 downto 0) := (others => '1')
     );
 	port(
 		clk      : in  std_logic;
@@ -63,7 +63,7 @@ architecture RTL of MACFullFilter is
 		generic(
 			addressX : integer range 0 to 4;
 			addressY : integer range 0 to 4;
-			depth_offset : unsigned(natural(log2(real(nrOfInputs))) - 1 downto 0) := (others => '0')
+			filter_offset : unsigned(natural(log2(real(nrOfInputs))) - 1 downto 0) := (others => '0')
 		);
 		port(
 			clk      : in  std_logic;
@@ -111,7 +111,7 @@ begin
 				generic map(
 					addressX => J,
 					addressY => I,
-					depth_offset => depth_offset
+					filter_offset => filter_offset
 				)
 				port map(
 					clk      => clk,
