@@ -1,6 +1,7 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all; 
+use work.types.all;
 
 entity fsm is
 	port(
@@ -18,7 +19,7 @@ entity fsm is
 		writeEnable   : out std_logic;
 		x             : out integer;
 		y             : out integer;
-		depth         : out integer;
+		depth         : out integer; 
 		fcWDepth      : out integer;
 		filter        : out integer;
 		done          : out std_logic;
@@ -114,9 +115,9 @@ begin
 
 			when save =>
 				writeEnable      <= '1';
-				filterCount_next <= filterCount + 8;
+				filterCount_next <= filterCount + NrOfInputs;
 
-				if filterCount + 8 < totalFilters then
+				if filterCount + NrOfInputs < totalFilters then
 					state_next <= prep;
 				else
 					filterCount_next <= 0;
@@ -181,8 +182,8 @@ begin
 
 			when saveFC =>
 				writeEnable      <= '1';
-				filterCount_next <= filterCount + 8;
-				if filtercount + 8 < totalFilters then
+				filterCount_next <= filterCount + NrOfInputs;
+				if filtercount + NrOfInputs < totalFilters then
 					state_next <= prepFC;
 				else
 					state_next <= finished;
