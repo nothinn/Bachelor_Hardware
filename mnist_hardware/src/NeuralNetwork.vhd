@@ -326,7 +326,6 @@ architecture rtl of NeuralNetwork is
     --signal an : std_logic_vector(3 downto 0);
     
     
-    signal clk : std_logic;
 begin
 
 

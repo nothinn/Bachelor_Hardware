@@ -56,7 +56,7 @@ architecture rtl of topFirstRam is
             clk        : in std_logic;
             addressX   : in integer range 0 to ram_size - 1;
             addressY   : in integer range 0 to ram_size - 1;
-            valid      : out std_logic;
+            valid      : in std_logic;
             blocknr    : out integer range 0 to size ** 2 - 1;
             blockValid : out std_logic;
             depth_addr : out integer
