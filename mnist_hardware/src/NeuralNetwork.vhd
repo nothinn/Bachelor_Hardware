@@ -48,7 +48,7 @@ architecture rtl of NeuralNetwork is
     */
     component MACFullFilter is
         generic(
-            depth_offset : unsigned(2 downto 0) := "000"
+            depth_offset : unsigned(natural(log2(real(nrOfInputs))) - 1 downto 0) := (others => '0')
         );
         port (
             clk      : in std_logic;
@@ -513,7 +513,7 @@ begin
     GEN_MACFull : for I in 0 to NrOfInputs - 1 generate
         MACFullFilter_inst : MACFullFilter
             generic map(
-                depth_offset => to_unsigned(I,3)
+                depth_offset => to_unsigned(I,natural(log2(real(nrOfInputs))))
             )
             port map(
                 clk      => clk,
@@ -650,15 +650,14 @@ begin
         end loop;
 
         if (we_ram_reg = '1') and (innerConvFC_reg = '1') then
-            if filter_reg2 = 0 then
+           
+                
                 for I in 0 to NrOfInputs - 1 loop
-                    resultreg_next(I) <= ram_data_in(I);
+                    if (filter_reg2 + I < layerTotFilters(nrOfLayers-1)) then
+                        resultreg_next(I+filter_reg2) <= ram_data_in(I);
+                    end if;
                 end loop;
-            else
-                for I in 0 to 1 loop
-                    resultreg_next(filter_reg2 + I) <= ram_data_in(I);
-                end loop;
-            end if;
+           
         end if;
 
     end process ResultLogic;
