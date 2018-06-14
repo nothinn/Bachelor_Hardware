@@ -216,6 +216,62 @@ architecture rtl of NeuralNetwork is
     end component UartController;
     
     
+    component pipeRamInput is
+        generic (
+            nrOfDelays        :  integer := 1
+        );
+        port (
+            clk               : in std_logic;
+            rst               : in std_logic;
+            we_ram            : in std_logic;
+            addressXout       : in integer;
+            addressYout       : in integer;
+            filter            : in integer;
+            ram_data          : in ram_input(NrOfINputs - 1 downto 0);
+            we_ram_piped      : out std_logic;
+            addressXout_piped : out integer;
+            addressYout_piped : out integer;
+            filter_piped      : out integer;
+            ram_data_piped    : out ram_input(NrOfINputs - 1 downto 0)
+        );
+    end component;
+    
+    component pipeMacfullOut is
+        generic (
+            nrOfDelays        :  integer := 0
+        );
+        port (
+            clk               : in std_logic;
+            rst               : in std_logic;
+            we_ram            : in std_logic;
+            addressXout       : in integer;
+            addressYout       : in integer;
+            filter            : in integer;
+            mac_array         : in ram_input(NrOfInputs -1 downto 0);
+            we_ram_piped      : out std_logic;
+            addressXout_piped : out integer;
+            addressYout_piped : out integer;
+            filter_piped      : out integer;
+            mac_array_piped   : out ram_input(NrOfInputs -1 downto 0)
+        );
+    end component;
+    
+
+    --Pipeline signals for mac_output
+    signal we_ram_pipedfm : std_logic;
+    signal addressXout_pipedfm :  integer;
+    signal addressYout_pipedfm :  integer;
+    signal filter_pipedfm      :  integer;
+    signal mac_array_piped    :  ram_input(NrOfINputs - 1 downto 0);
+    
+    --Pipeline signals for ram input
+    signal we_ram_piped : std_logic;
+    signal addressXout_piped :  integer;
+    signal addressYout_piped :  integer;
+    signal filter_piped      :  integer;
+    signal ram_data_piped    :  ram_input(NrOfINputs - 1 downto 0);
+    
+    
     signal input_mac : MAC_inputs;
 
     signal filter : unsigned(5 downto 0);
@@ -237,7 +293,7 @@ architecture rtl of NeuralNetwork is
     signal depth    : unsigned(6 downto 0);
     signal depthWFC : unsigned(8 downto 0);
 
-    signal MAC_ARRAY, MAX_ARRAY : ram_input(7 downto 0);
+    signal MAC_ARRAY, MAX_ARRAY : ram_input(NrOfInputs-1 downto 0);
     
     
     signal we_ram : std_logic := '0';
@@ -460,6 +516,54 @@ begin
     end generate;
     */
     ----------------------------------------------------------------------------
+    --        Pipeline for RAM blocks                                         --
+    ----------------------------------------------------------------------------  
+    
+    pipeRamInput_inst: pipeRamInput
+        generic map (
+            nrOfDelays        => 4
+        )
+        port map (
+            clk               => clk,
+            rst               => rst,
+            we_ram            => we_ram_pipedfm,
+            addressXout       => addressXout_pipedfm,
+            addressYout       => addressYout_pipedfm,
+            filter            => filter_pipedfm,
+            ram_data          => max_array,
+            
+            we_ram_piped      => we_ram_piped,
+            addressXout_piped => addressXout_piped,
+            addressYout_piped => addressYout_piped,
+            filter_piped      => filter_piped,
+            ram_data_piped    => ram_data_piped
+        );
+
+    ----------------------------------------------------------------------------
+    --        Pipeline for MacFull output                                     --
+    ----------------------------------------------------------------------------  
+    pipeMacfullOut_inst: pipeMacfullOut
+        generic map (
+            nrOfDelays        => 5
+        )
+        port map (
+            clk               => clk,
+            rst               => rst,
+            we_ram            => we_ram_reg,
+            addressXout       => addressXout_reg1,
+            addressYout       => addressYout_reg1,
+            filter            => filter_reg2,
+            mac_array         => mac_array,
+            we_ram_piped      => we_ram_pipedfm,
+            addressXout_piped => addressXout_pipedfm,
+            addressYout_piped => addressYout_pipedfm,
+            filter_piped      => filter_pipedfm,
+            mac_array_piped   => mac_array_piped
+        );
+
+    
+    
+    ----------------------------------------------------------------------------
     --        Multiplexer for handling the three ram blocks                   --
     ----------------------------------------------------------------------------   
     muxProcess : process(all) is
@@ -484,24 +588,24 @@ begin
             ram_addressY0 <= addressY;
             ram_depth0    <= addressZ;
 
-            ram_addressX1 <= addressXOut_reg1;
-            ram_addressY1 <= addressYOut_reg1;
-            ram_depth1    <= filter_reg2;
+            ram_addressX1 <= addressXOut_piped;
+            ram_addressY1 <= addressYOut_piped;
+            ram_depth1    <= filter_piped;
 
             ram_wea(0) <= '0';
-            ram_wea(1) <= '1' and we_ram_reg;
+            ram_wea(1) <= '1' and we_ram_piped;
 
         else
             ram_addressX1 <= addressX;
             ram_addressY1 <= addressY;
             ram_depth1    <= addressZ;
 
-            ram_addressX0 <= addressXOut_reg1;
-            ram_addressY0 <= addressYOut_reg1;
-            ram_depth0    <= filter_reg2;
+            ram_addressX0 <= addressXOut_piped;
+            ram_addressY0 <= addressYOut_piped;
+            ram_depth0    <= filter_piped;
 
             ram_wea(1) <= '0';
-            ram_wea(0) <= '1' and we_ram_reg;
+            ram_wea(0) <= '1' and we_ram_piped;
         end if;
     end process;
     
@@ -589,7 +693,7 @@ begin
             port map(
                 clk        => clk,
                 rst        => rst,
-                convResult => MAC_array(I),
+                convResult => MAC_array_piped(I),
                 newMax     => newMax_reg,
                 calcMax    => calcMax_reg,
                 MaxResult  => MAX_array(I)
@@ -649,14 +753,14 @@ begin
             resultreg_next(I) <= resultReg(I);
         end loop;
 
-        if (we_ram_reg = '1') and (innerConvFC_reg = '1') then
-            if filter_reg2 = 0 then
+        if (we_ram_piped = '1') and (innerConvFC_reg = '1') then
+            if filter_piped = 0 then
                 for I in 0 to 7 loop
                     resultreg_next(I) <= ram_data_in(I);
                 end loop;
             else
                 for I in 0 to 1 loop
-                    resultreg_next(filter_reg2 + I) <= ram_data_in(I);
+                    resultreg_next(filter_piped + I) <= ram_data_in(I);
                 end loop;
             end if;
         end if;
@@ -672,7 +776,7 @@ begin
     ----------------------------------------------------------------------------    
     ram_ena <= "11";
 
-    ram_data_in <= MAX_ARRAY;
+    ram_data_in <= ram_data_piped;
     
     depth <= to_unsigned(addressZ, depth'length);
     
