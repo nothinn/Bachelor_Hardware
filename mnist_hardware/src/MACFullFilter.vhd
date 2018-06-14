@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use IEEE.math_real.all;
 use work.types.all;
-use work.configVHDL.all; 
+use work.configVHDL.all;
 --NOTER
 /*
 �ndre Fullfiltermac til at outputtet er 16 bit unsigned. (ReLu).
@@ -13,9 +13,9 @@ use work.configVHDL.all;
 Add bias f�r relu.
 */
 entity MACFullFilter is
-    generic(		
-        filter_offset : unsigned(natural(log2(real(nrOfInputs))) - 1 downto 0) := (others => '1')
-    );
+	generic(
+		filter_offset : unsigned(natural(log2(real(nrOfInputs))) - 1 downto 0) := (others => '1')
+	);
 	port(
 		clk      : in  std_logic;
 		rst      : in  std_logic;
@@ -34,16 +34,16 @@ end entity MACFullFilter;
 architecture RTL of MACFullFilter is
 	signal layerResReg, nextLayerResReg : signedNeuron;
 
-	signal inputs                                       : MAC_inputs;
-	signal weights                                      : MAC_weights;
-	signal macRes                                       : MAC_output;
-	signal AddResToSaturationCheck, newCalcMux, holdMux : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 1 + 5 + 1 - 1) downto 0);
-	signal concatRight                                  : signed(fixWeightright + inferredWeightBits + 1- 1 downto 0);
-	signal concatLeft                                   : signed((fixWeightleft - 1) + 5 - 1 downto 0);
-	signal newcalc_reg, newcalc_reg0, hold_reg          : std_logic;
-	signal bias                                         : signedNeuron;
-	signal addBiasOut                                   : signedNeuron;
-	signal ROMDepth                                     : unsigned(8 downto 0);
+	signal inputs                              : MAC_inputs;
+	signal weights                             : MAC_weights;
+	signal macRes                              : MAC_output;
+	signal AddSatCheck, newCalcMux, holdMux    : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 1 + 5 + 1 - 1) downto 0);
+	signal concatRight                         : signed(fixWeightright + inferredWeightBits + 1 - 1 downto 0);
+	signal concatLeft                          : signed((fixWeightleft - 1) + 5 - 1 downto 0);
+	signal newcalc_reg, newcalc_reg0, hold_reg : std_logic;
+	signal bias                                : signedNeuron;
+	signal addBiasOut                          : signedNeuron;
+	signal ROMDepth                            : unsigned(8 downto 0);
 
 	signal biasOut : signed(7 downto 0);
 
@@ -61,8 +61,8 @@ architecture RTL of MACFullFilter is
 
 	component weightsRom is
 		generic(
-			addressX : integer range 0 to 4;
-			addressY : integer range 0 to 4;
+			addressX      : integer range 0 to 4;
+			addressY      : integer range 0 to 4;
 			filter_offset : unsigned(natural(log2(real(nrOfInputs))) - 1 downto 0) := (others => '0')
 		);
 		port(
@@ -109,8 +109,8 @@ begin
 		makeROMsx : for J in 0 to 4 generate
 			weightsRom_inst : weightsRom
 				generic map(
-					addressX => J,
-					addressY => I,
+					addressX      => J,
+					addressY      => I,
 					filter_offset => filter_offset
 				)
 				port map(
@@ -128,11 +128,11 @@ begin
 
 	makeMuxLogic : process(all)
 	begin
-		newCalcMux              <= (others => '0');
-		holdMux                 <= (others => '0');
-		AddResToSaturationCheck <= newCalcMux + holdMux;
-		concatLeft              <= (others => '0');
-		concatRight             <= (others => '0');
+		newCalcMux  <= (others => '0');
+		holdMux     <= (others => '0');
+		AddSatCheck <= newCalcMux + holdMux;
+		concatLeft  <= (others => '0');
+		concatRight <= (others => '0');
 		--bias					<= (others => '0'); --temperary value
 		case hold_reg is
 			when '1' =>
@@ -175,16 +175,16 @@ begin
 		end case;
 
 		--check for saturation
-		case AddResToSaturationCheck(AddResToSaturationCheck'length - 1 downto (AddResToSaturationCheck'length - 1) - 1 - 5 - (fixWeightleft - 1)) is -- first -1 to have the extra bit possiple by the addition. secind -1 To look at the sign aswell
-			when (AddResToSaturationCheck(AddResToSaturationCheck'length - 1 downto (AddResToSaturationCheck'length - 1) - 1 - 5 - (fixWeightleft - 1))'range => '1') =>     -- the result has not meet negative saturation
-				nextLayerResReg <= AddResToSaturationCheck((AddResToSaturationCheck'length - 1) - 1 - 5 - (fixWeightleft - 1) downto fixWeightright + inferredWeightBits + 1);
-			when (AddResToSaturationCheck(AddResToSaturationCheck'length - 1 downto (AddResToSaturationCheck'length - 1) - 1 - 5 - (fixWeightleft - 1))'range => '0') =>     -- the result has not meet posative saturation
-				nextLayerResReg <= AddResToSaturationCheck((AddResToSaturationCheck'length - 1) - 1 - 5 - (fixWeightleft - 1) downto fixWeightright + inferredWeightBits + 1);
+		case AddSatCheck(AddSatCheck'length - 1 downto (AddSatCheck'length - 1) - 1 - 5 - (fixWeightleft - 1)) is -- first -1 to have the extra bit possiple by the addition. secind -1 To look at the sign aswell
+			when (AddSatCheck(AddSatCheck'length - 1 downto (AddSatCheck'length - 1) - 1 - 5 - (fixWeightleft - 1))'range => '1') => -- the result has not meet negative saturation
+				nextLayerResReg <= AddSatCheck((AddSatCheck'length - 1) - 1 - 5 - (fixWeightleft - 1) downto fixWeightright + inferredWeightBits + 1);
+			when (AddSatCheck(AddSatCheck'length - 1 downto (AddSatCheck'length - 1) - 1 - 5 - (fixWeightleft - 1))'range => '0') => -- the result has not meet posative saturation
+				nextLayerResReg <= AddSatCheck((AddSatCheck'length - 1) - 1 - 5 - (fixWeightleft - 1) downto fixWeightright + inferredWeightBits + 1);
 			when others =>              -- saturation detected
-				if AddResToSaturationCheck(AddResToSaturationCheck'length - 1) = '0' then -- "overflow" saturation detected
-					nextLayerResReg <= '0' & "1111111111111111"; -- highest possiple number is passed
+				if AddSatCheck(AddSatCheck'length - 1) = '0' then -- "overflow" saturation detected
+					nextLayerResReg <= '0' & (nextLayerResReg'range - 1 => '1'); -- highest possiple number is passed
 				else
-					nextLayerResReg <= '1' & "0000000000000000"; -- lowest possiple number is passed
+					nextLayerResReg <= '1' & (nextLayerResReg'range - 1 => '0'); -- lowest possiple number is passed
 				end if;
 		end case;
 
