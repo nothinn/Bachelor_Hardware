@@ -1,19 +1,20 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use IEEE.math_real.all;
 use work.types.all;
 use work.configVHDL.all; 
 --NOTER
 /*
-Ændre Fullfiltermac til at outputtet er 16 bit unsigned. (ReLu).
+ï¿½ndre Fullfiltermac til at outputtet er 16 bit unsigned. (ReLu).
 
-Ændre saturation og padding til 17 bit, til at holde negative tal.
+ï¿½ndre saturation og padding til 17 bit, til at holde negative tal.
 
-Add bias før relu.
+Add bias fï¿½r relu.
 */
 entity MACFullFilter is
     generic(		
-        depth_offset : unsigned(2 downto 0) := "000"
+        filter_offset : unsigned(natural(log2(real(nrOfInputs))) - 1 downto 0) := (others => '1')
     );
 	port(
 		clk      : in  std_logic;
@@ -62,13 +63,13 @@ architecture RTL of MACFullFilter is
 		generic(
 			addressX : integer range 0 to 4;
 			addressY : integer range 0 to 4;
-			depth_offset : unsigned(2 downto 0) := "000"
+			filter_offset : unsigned(natural(log2(real(nrOfInputs))) - 1 downto 0) := (others => '0')
 		);
 		port(
 			clk      : in  std_logic;
 			rst      : in  std_logic;
 			layer    : in  integer range 0 to NrOfLayers - 1;
-			filterin : in  unsigned(5 downto 3);
+			filterin : in  unsigned(5 downto natural(log2(real(nrOfInputs))));
 			addressZ : in  integer range 0 to 255;
 			output   : out signed(7 downto 0)
 		);
@@ -110,13 +111,13 @@ begin
 				generic map(
 					addressX => J,
 					addressY => I,
-					depth_offset => depth_offset
+					filter_offset => filter_offset
 				)
 				port map(
 					clk      => clk,
 					rst      => rst,
 					layer    => layer,
-					filterin => filter(5 downto 3),
+					filterin => filter(5 downto natural(log2(real(nrOfInputs)))),
 					addressZ => to_integer(ROMDepth),
 					output   => weights(I*5 + J)
 				);

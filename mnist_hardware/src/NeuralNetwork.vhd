@@ -48,7 +48,7 @@ architecture rtl of NeuralNetwork is
     */
     component MACFullFilter is
         generic(
-            depth_offset : unsigned(2 downto 0) := "000"
+            filter_offset : unsigned(natural(log2(real(nrOfInputs))) - 1 downto 0) := (others => '0')
         );
         port (
             clk      : in std_logic;
@@ -293,7 +293,7 @@ architecture rtl of NeuralNetwork is
     signal depth    : unsigned(6 downto 0);
     signal depthWFC : unsigned(8 downto 0);
 
-    signal MAC_ARRAY, MAX_ARRAY : ram_input(NrOfInputs-1 downto 0);
+    signal MAC_ARRAY, MAX_ARRAY : ram_input(NrOfInputs - 1 downto 0);
     
     
     signal we_ram : std_logic := '0';
@@ -302,7 +302,7 @@ architecture rtl of NeuralNetwork is
 
     signal pre_filter, filter_reg, filter_reg1 : integer;
 
-    type filter_array is array (7 downto 0) of unsigned(5 downto 0);
+    type filter_array is array (NrOfInputs-1 downto 0) of unsigned(5 downto 0);
 
     signal filter_input    : filter_array;
     signal innerStart      : std_logic;
@@ -441,7 +441,7 @@ begin
             depth_size => LayerInputDepth(2),
             size       => 5,
             ram_size   => LayerWidthHeight(2),
-            NrOfInputs => 8
+            NrOfInputs => NrOfInputs
         )
         port map(
             clk      => clk,
@@ -461,7 +461,7 @@ begin
             depth_size => LayerInputDepth(1),
             size       => 5,
             ram_size   => LayerWidthHeight(1),
-            NrOfInputs => 8
+            NrOfInputs => NrOfInputs
         )
         port map(
             clk      => clk,
@@ -614,10 +614,10 @@ begin
     ----------------------------------------------------------------------------
     --                         Generate macfullfilters                        --
     ----------------------------------------------------------------------------    
-    GEN_MACFull : for I in 0 to 7 generate
+    GEN_MACFull : for I in 0 to NrOfInputs - 1 generate
         MACFullFilter_inst : MACFullFilter
             generic map(
-                depth_offset => to_unsigned(I,3)
+                filter_offset => to_unsigned(I,natural(log2(real(nrOfInputs))))
             )
             port map(
                 clk      => clk,
@@ -753,16 +753,15 @@ begin
             resultreg_next(I) <= resultReg(I);
         end loop;
 
-        if (we_ram_piped = '1') and (innerConvFC_reg = '1') then
-            if filter_piped = 0 then
-                for I in 0 to 7 loop
-                    resultreg_next(I) <= ram_data_in(I);
+        if (we_ram_reg = '1') and (innerConvFC_reg = '1') then
+           
+                
+                for I in 0 to NrOfInputs - 1 loop
+                    if (filter_piped + I < layerTotFilters(nrOfLayers-1)) then
+                        resultreg_next(I+filter_piped) <= ram_data_in(I);
+                    end if;
                 end loop;
-            else
-                for I in 0 to 1 loop
-                    resultreg_next(filter_piped + I) <= ram_data_in(I);
-                end loop;
-            end if;
+           
         end if;
 
     end process ResultLogic;
@@ -783,7 +782,7 @@ begin
     
     process(all)
     begin
-        for i in 0 to 7 loop
+        for i in 0 to NrOfInputs - 1 loop
             filter_input(i) <= filter + to_unsigned(I, 6);
         end loop;
     end process;
