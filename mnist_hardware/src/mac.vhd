@@ -17,8 +17,6 @@ architecture RTL of MAC is
 
 	type MAC_DSP_outputs is array (24 downto 0) of signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 1 + 1 - 1) downto 0); -- the size of a product is is the size of the sum of the multiplier and the multiplicant 
 	type Weight_w_inferedbits_resized is array (24 downto 0) of signed((fixWeightleft + fixWeightright + inferredWeightBits + 1 - 1) downto 0); -- plus 1 is to pad to match bit significance before mult
-	--signal weightI : MAC_weights;
-	--signal neuronsI : mac_inputs;
 
 	signal fullWeights     : Weight_w_inferedbits_resized;
 	signal signedNeruons   : signedNeuronsType;
@@ -26,33 +24,10 @@ architecture RTL of MAC is
 	signal inferredBitsNeg : signed(inferredWeightBits - 1 downto 0);
 	signal DSP_outputs     : MAC_DSP_outputs;
 
-	--signal result : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + 5 - 1) downto 0);
-
+	
 begin
 
-	--	process(all)
-	--	begin
-	--		if rising_edge(clk) then
-	--			mult : for I in 0 to 24 loop
-	--                
-	--
-	--		    DSP_outputs(I) <= --below pramga is added to let simulation work the same as synthesis. 
-	--                --pragma synthesis_off
-	--                RESIZE(
-	--                --pragma synthesis_on
-	--                    weight(I) * neurons(i)
-	--                    
-	--                --pragma synthesis_off
-	--                    ,16)
-	--                --pragma synthesis_on
-	--                ;
-	--
-	--                
-	--                
-	--			end loop mult;
-	--		end if;
-	--	end process;
-
+	
 	process(all)
 	begin
 		inferredBitsPos <= (others => '0');
