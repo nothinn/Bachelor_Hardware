@@ -41,11 +41,11 @@ end entity;
 
 architecture rtl of topRam is
 
-      attribute DONT_TOUCH : string;
-  attribute DONT_TOUCH of  ramGen : label is "TRUE";
-  attribute DONT_TOUCH of  ramProcess : label is "TRUE";
-  attribute DONT_TOUCH of  gen_trans : label is "TRUE";
-  attribute DONT_TOUCH of  addressTranslator_inst : label is "TRUE";
+  --attribute DONT_TOUCH : string;
+ -- attribute DONT_TOUCH of  ramGen : label is "TRUE";
+  --attribute DONT_TOUCH of  ramProcess : label is "TRUE";
+  --attribute DONT_TOUCH of  gen_trans : label is "TRUE";
+  --attribute DONT_TOUCH of  addressTranslator_inst : label is "TRUE";
 
     
 
