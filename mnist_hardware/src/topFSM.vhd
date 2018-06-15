@@ -1,9 +1,9 @@
-library ieee; 
+library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.types.all; 
+use work.types.all;
 use work.ConfigVHDL.all;
- 
+
 entity topFSM is
 	port(
 		clk             : in  std_logic;
@@ -16,8 +16,9 @@ entity topFSM is
 		innerYMax       : out unsigned(5 downto 0);
 		innerTotFilters : out unsigned(6 downto 0); -- the maximum amount of filters used in a layer is 64
 		innerConvFC     : out std_logic; -- determines whether the current layer is a Conv or FC layer (is used in the inner FSM
-		layerCount      : out unsigned(layerCounterWidth -1 downto 0);
-		innerDoneAck    : out std_logic
+		layerCount      : out unsigned(layerCounterWidth - 1 downto 0);
+		innerDoneAck    : out std_logic;
+		doneLED         : out std_logic
 	);
 end entity topFSM;
 
@@ -42,7 +43,7 @@ begin
 		state_next   <= state;
 		innerstart   <= '0';
 		innerDoneAck <= '0';
-
+		doneLED      <= '0';
 		case state is
 			when idle =>
 				layerNext <= "00";
@@ -63,7 +64,12 @@ begin
 				end if;
 
 			when allDone =>
-				state_next <= allDone;
+				doneLED <= '1';
+				if (start = '1') then
+					state_next <= allDone;
+				else
+					state_next <= idle;
+				end if;
 
 			when innerDoneState =>
 				innerDoneAck <= '1';
@@ -72,19 +78,18 @@ begin
 		end case;
 
 	end process;
-	
-	process(clk,rst)
+
+	process(clk, rst)
 	begin
 		if rst = '1' then
 			state <= idle;
 			layer <= (others => '0');
-			
+
 		elsif rising_edge(clk) then
 			state <= state_next;
 			layer <= layerNext;
-			
+
 		end if;
 	end process;
-	
 
 end architecture RTL;
