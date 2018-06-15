@@ -22,7 +22,9 @@ begin
     
     process(all)
     begin
-        if rising_edge(clk) then
+		if rst = '1' then
+			output <= "00000000";
+        elsif rising_edge(clk) then
             case layer is
 				when 0 =>
 					case filter is

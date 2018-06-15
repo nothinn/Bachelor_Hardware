@@ -43,7 +43,9 @@ begin
 			signedNeruons(I) <= "0" & signed(neurons(I)); --input is allways posative or zero
 		end loop infferBits;
 
-		if rising_edge(clk) then
+		if rst = '1' then
+			DSP_outputs <= (others => 0);
+		elsif rising_edge(clk) then
 			mult : for I in 0 to 24 loop -- the multiplication signals know support the full width of the greatest possiple result
 
 				DSP_outputs(I) <= fullWeights(I) * signedNeruons(I);
