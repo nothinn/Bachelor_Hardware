@@ -182,9 +182,9 @@ begin
 				nextLayerResReg <= AddSatCheck((AddSatCheck'length - 1) - 1 - 5 - (fixWeightleft - 1) downto fixWeightright + inferredWeightBits + 1);
 			when others =>              -- saturation detected
 				if AddSatCheck(AddSatCheck'length - 1) = '0' then -- "overflow" saturation detected
-					nextLayerResReg <= '0' & (nextLayerResReg'range - 1 => '1'); -- highest possiple number is passed
+					nextLayerResReg <=  (nextLayerResReg'length - 1 => '0', others => '1'); -- highest possiple number is passed
 				else
-					nextLayerResReg <= '1' & (nextLayerResReg'range - 1 => '0'); -- lowest possiple number is passed
+					nextLayerResReg <=  (nextLayerResReg'length - 1 => '1', others => '0'); -- lowest possiple number is passed
 				end if;
 		end case;
 

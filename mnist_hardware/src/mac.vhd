@@ -44,7 +44,7 @@ begin
 		end loop infferBits;
 
 		if rst = '1' then
-			DSP_outputs <= (others => 0);
+			DSP_outputs <= (others => (others => '0'));
 		elsif rising_edge(clk) then
 			mult : for I in 0 to 24 loop -- the multiplication signals know support the full width of the greatest possiple result
 

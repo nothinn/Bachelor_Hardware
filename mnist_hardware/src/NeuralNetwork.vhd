@@ -17,7 +17,7 @@ entity NeuralNetwork is
 		an      : out std_logic_vector(3 downto 0);
 		tx      : out std_logic;
 		rx      : in  std_logic;
-		doneLED :     std_logic
+		doneLED : out std_logic
 	);
 end entity;
 
@@ -496,7 +496,7 @@ begin
 
 	pipeRamInput_inst : pipeRamInput
 		generic map(
-			nrOfDelays => 4
+			nrOfDelays => 0
 		)
 		port map(
 			clk               => clk,
@@ -518,7 +518,7 @@ begin
 	----------------------------------------------------------------------------  
 	pipeMacfullOut_inst : pipeMacfullOut
 		generic map(
-			nrOfDelays => 5
+			nrOfDelays => 0
 		)
 		port map(
 			clk               => clk,

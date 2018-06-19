@@ -257,7 +257,7 @@ begin
 			)
 			port map(
 				clk   => clk,
-				rst   => rts,
+				rst   => rst,
 				ena   => ena,
 				enb   => ena,           --enb,
 				addra => depth_addr_added,
@@ -373,6 +373,7 @@ begin
 		)
 		port map(
 			clk        => clk,
+			rst        => rst,
 			addressX   => addressX,
 			addressY   => addressY,
 			valid      => wea,
