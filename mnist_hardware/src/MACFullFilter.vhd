@@ -1,17 +1,30 @@
+-- -----------------------------------------------------------------------------
+--
+--  Project    : Hardware Accelerator for Image processing using an FPGA
+--             : Bachelor, DTU
+--             :
+--  Title      :  MacFullFilter
+--             :
+--  Developers :  Anthon Vincent Riber - s154663@student.dtu.dk
+--             :  Simon Thye Andersen  - s154227@student.dtu.dk
+--             :
+--  Purpose    :  Connecting MAC units with generated ROMs and saturation
+--             :  check on the result of the accumulated value.
+--             :
+--  Revision   :  1.0   20-06-18     Final version
+--             :
+--
+-- -----------------------------------------------------------------------------
+
 library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use IEEE.math_real.all;
-use work.types.all;
-use work.configVHDL.all;
---NOTER
-/*
-�ndre Fullfiltermac til at outputtet er 16 bit unsigned. (ReLu).
+    use ieee.std_logic_1164.all;
+    use ieee.numeric_std.all;
+    use IEEE.math_real.all;
 
-�ndre saturation og padding til 17 bit, til at holde negative tal.
+    use work.types.all;
+    use work.configVHDL.all;
 
-Add bias f�r relu.
-*/
+
 entity MACFullFilter is
 	generic(
 		filter_offset : unsigned(natural(log2(real(nrOfInputs))) - 1 downto 0) := (others => '1')
@@ -32,23 +45,12 @@ entity MACFullFilter is
 end entity MACFullFilter;
 
 architecture RTL of MACFullFilter is
-	signal layerResReg, nextLayerResReg : signedNeuron;
 
-	signal inputs                              : MAC_inputs;
-	signal weights                             : MAC_weights;
-	signal macRes                              : MAC_output;
-	signal AddSatCheck, newCalcMux, holdMux    : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 1 + 5 + 1 - 1) downto 0);
-	signal concatRight                         : signed(fixWeightright + inferredWeightBits + 1 - 1 downto 0);
-	signal concatLeft                          : signed((fixWeightleft - 1) + 5 - 1 downto 0);
-	signal newcalc_reg, newcalc_reg0, hold_reg : std_logic;
-	signal bias                                : signedNeuron;
-	signal addBiasOut                          : signedNeuron;
-	signal ROMDepth                            : unsigned(8 downto 0);
 
-	signal biasOut : signed(7 downto 0);
-
-	signal filter_reg, filter_reg1, filter_reg2 : unsigned(5 downto 0);
-
+    ----------------------------------------------------------
+    --             Component declarations                   --
+    ----------------------------------------------------------
+    
 	component MAC
 		port(
 			clk     : in  std_logic;
@@ -84,9 +86,34 @@ architecture RTL of MACFullFilter is
 			output : out signed(7 downto 0)
 		);
 	end component;
+    
+    
+    
+    ----------------------------------------------------------
+    --             signal declarations                      --
+    ----------------------------------------------------------
+    
+    signal layerResReg, nextLayerResReg        : signedNeuron;
+    signal inputs                              : MAC_inputs;
+    signal weights                             : MAC_weights;
+    signal macRes                              : MAC_output;
+    signal AddSatCheck, newCalcMux, holdMux    : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 1 + 5 + 1 - 1) downto 0);
+    signal concatRight                         : signed(fixWeightright + inferredWeightBits + 1 - 1 downto 0);
+    signal concatLeft                          : signed((fixWeightleft - 1) + 5 - 1 downto 0);
+    signal newcalc_reg, newcalc_reg0, hold_reg : std_logic;
+    signal bias                                : signedNeuron;
+    signal addBiasOut                          : signedNeuron;
+    signal ROMDepth                            : unsigned(8 downto 0);
+    signal biasOut                             : signed(7 downto 0);
+    signal filter_reg, filter_reg1, filter_reg2: unsigned(5 downto 0);
 
 begin
 
+    
+    ----------------------------------------------------------
+    --            Instantiating the components              --
+    ----------------------------------------------------------
+    
 	MAC1 : MAC
 		port map(
 			clk     => clk,
@@ -96,6 +123,8 @@ begin
 			results => macRes
 		);
 
+    inputs <= input;
+    
 	biasRom1 : biasRom
 		port map(
 			clk    => clk,
@@ -124,7 +153,9 @@ begin
 		end generate makeROMsx;
 	end generate makeROMsy;
 
-	inputs <= input;
+    ----------------------------------------------------------
+    --     Control signals and saturation check             --
+    ----------------------------------------------------------
 
 	makeMuxLogic : process(all)
 	begin
@@ -133,7 +164,6 @@ begin
 		AddSatCheck <= newCalcMux + holdMux;
 		concatLeft  <= (others => '0');
 		concatRight <= (others => '0');
-		--bias					<= (others => '0'); --temperary value
 		case hold_reg is
 			when '1' =>
 				holdMux <= (others => '0');
@@ -199,7 +229,13 @@ begin
 
 	end process makeMuxLogic;
 
-	name : process(clk, rst) is
+    
+    
+    ----------------------------------------------------------
+    --            Register description                      --
+    ----------------------------------------------------------
+    
+	registers : process(clk, rst) is
 	begin
 		if rst = '1' then
 			layerResReg  <= X"0000" & "0";
@@ -220,6 +256,6 @@ begin
 			filter_reg2  <= filter_reg1;
 
 		end if;
-	end process name;
+	end process registers;
 
 end architecture RTL;

@@ -1,11 +1,28 @@
+-- -----------------------------------------------------------------------------
+--
+--  Project    : Hardware Accelerator for Image processing using an FPGA
+--             : Bachelor, DTU
+--             :
+--  Title      :  TopRam
+--             :
+--  Developers :  Anthon Vincent Riber - s154663@student.dtu.dk
+--             :  Simon Thye Andersen  - s154227@student.dtu.dk
+--             :
+--  Purpose    :  Instantiating 25 RAM blocks and address translators for them.
+--             :  Also makes multi-cycle saving of results.
+--             :
+--  Revision   :  1.0   20-06-18     Final version
+--             :
+--
+-- -----------------------------------------------------------------------------
+
 library IEEE;
-use IEEE.std_logic_1164.all;
-use IEEE.numeric_std.all;
-use IEEE.std_logic_unsigned.all;
+    use IEEE.std_logic_1164.all;
+    use IEEE.numeric_std.all;
+    use IEEE.std_logic_unsigned.all;
+    use IEEE.math_real.all;
 
-use IEEE.math_real.all;
-
-use work.Types.all;
+    use work.Types.all;
 
 entity topRam is
 	generic(
@@ -35,10 +52,14 @@ end entity;
 architecture rtl of topRam is
 
 	--attribute DONT_TOUCH : string;
-	-- attribute DONT_TOUCH of  ramGen : label is "TRUE";
+	--attribute DONT_TOUCH of  ramGen : label is "TRUE";
 	--attribute DONT_TOUCH of  ramProcess : label is "TRUE";
 	--attribute DONT_TOUCH of  gen_trans : label is "TRUE";
 	--attribute DONT_TOUCH of  addressTranslator_inst : label is "TRUE";
+
+    ----------------------------------------------------------
+    --             Component declarations                   --
+    ----------------------------------------------------------
 
 	component addressTranslator is
 		generic(
@@ -81,14 +102,18 @@ architecture rtl of topRam is
 		);
 	end component;
 
-	type trans_block is array (integer range size**2 - 1 downto 0) of integer range 0 to size **2 - 1;
 
+    ----------------------------------------------------------
+    --             signal declarations                      --
+    ----------------------------------------------------------
+
+	type trans_block is array (integer range size**2 - 1 downto 0) of integer range 0 to size **2 - 1;
 	type trans_addr is array (integer range size**2 - 1 downto 0) of integer;
 
 	signal blocknr_arr                         : trans_block;
 	signal blocknr_arr_reg                     : trans_block;
-	signal depth_addr_arr, depth_addr_arr_test : trans_addr;
-	signal depth_addr_arr2                     : trans_addr;
+	signal depth_addr_arr                      : trans_addr;
+	signal depth_addr_arr2                        : trans_addr;
 
 	signal blocknr          : integer;
 	signal depth_addr       : integer;
@@ -100,7 +125,6 @@ architecture rtl of topRam is
 	signal latchedAddrY : integer range 0 to ram_size - 1;
 
 	signal blockValid : std_logic_vector(size**2 - 1 downto 0);
-	--
 	signal counter    : integer range 0 to NrOfInputs - 1;
 
 	type type_doa is array (integer range 0 to size **2 - 1) of MAC_result;
@@ -117,9 +141,6 @@ architecture rtl of topRam is
 	signal addressY_reg  : integer range 0 to ram_size - 1;
 	signal addressX_reg2 : integer range 0 to ram_size - 1;
 	signal addressY_reg2 : integer range 0 to ram_size - 1;
-
-	signal testValid : std_logic;
-	signal testX     : integer;
 
 	signal depthReg : integer range 0 to depth_size - 1;
 
@@ -141,31 +162,6 @@ architecture rtl of topRam is
 
 begin
 
-	--We make a latch here, because of the blockValid. Not perfect. Consider what to do.
-	/* process(all) is
-begin
-    for i in 0 to size**2-1 loop
-        if blockValid(i) = '1' then
-            depth_addr_arr(blocknr_arr(i)) <= depth_addr_arr2(i) + depth;
-        end if;
-    end loop;
-    end process;*/
-
-	--This implementation can be seen as a crossbar or as an OR gate network. Let synthesis tool decode it.
-	/*
-    process(all) is
-    begin
-        for i in 0 to size**2-1 loop
-            depth_addr_arr_test(i) <= 0;
-        end loop;
-
-        for j in 0 to size**2-1 loop
-            if blockValid(j) = '1' then
-                depth_addr_arr_test(blocknr_arr(j)) <= depth_addr_arr2(j) + depth;
-            end if;
-        end loop;
-    end process;
-    */
 	gen_crossbar : for i in 0 to size**2 - 1 generate
 		gen_crossbar2 : for j in 0 to size**2 - 1 generate
 			process(all) is
@@ -189,7 +185,7 @@ begin
 		begin
 			tmp := (others => '0');
 			for j in 0 to size**2 - 1 loop
-				tmp := tmp OR to_unsigned(translated_output(j)(i), 11);
+				tmp := tmp or to_unsigned(translated_output(j)(i), 11);
 			end loop;
 
 			depth_addr_arr(i) <= to_integer(tmp);
