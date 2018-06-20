@@ -1,6 +1,22 @@
+-- -----------------------------------------------------------------------------
+--
+--  Project    : Hardware Accelerator for Image processing using an FPGA
+--             : Bachelor, DTU
+--             :
+--  Title      :  FSM
+--             :
+--  Developers :  Anthon Vincent Riber - s154663@student.dtu.dk
+--             :  Simon Thye Andersen  - s154227@student.dtu.dk
+--             :
+--  Purpose    :  The FSM controlling execution of a sigle layer
+--             :
+--  Revision   :  1.0   20-06-18     Final version
+--             :
+-- -----------------------------------------------------------------------------
+
 library IEEE;
 use IEEE.std_logic_1164.all;
-use IEEE.numeric_std.all; 
+use IEEE.numeric_std.all;
 use work.types.all;
 
 entity fsm is
@@ -19,7 +35,7 @@ entity fsm is
 		writeEnable   : out std_logic;
 		x             : out integer;
 		y             : out integer;
-		depth         : out integer; 
+		depth         : out integer;
 		fcWDepth      : out integer;
 		filter        : out integer;
 		done          : out std_logic;
@@ -30,6 +46,10 @@ entity fsm is
 end entity;
 
 architecture rtl of fsm is
+
+	----------------------------------------------------------
+	--             signal declarations                      --
+	----------------------------------------------------------
 
 	type state_type is (idle, prep, MAC, save, max, finished, prepFC, MACFC, maxFC, saveFC);
 
@@ -54,13 +74,16 @@ begin
 	maxCounterOut <= maxCounter;
 
 	process(all)
+		----------------------------------------------------------
+		--                     FSM Logic                        --
+		----------------------------------------------------------		
 	begin
 		writeEnable      <= '0';
 		state_next       <= state;
 		xint_next        <= xint;
 		yint_next        <= yint;
 		depthin_next     <= depthin;
-		fcWDepthin_next  <= fcWDepthin ;
+		fcWDepthin_next  <= fcWDepthin;
 		done             <= '0';
 		new_calcint_next <= '0';
 		filterCount_next <= filterCount;
@@ -86,7 +109,6 @@ begin
 			when prep =>
 				new_calcint_next <= '1';
 				depthin_next     <= 0;
-				--count_next <= 0;
 
 				state_next <= MAC;
 
@@ -144,10 +166,10 @@ begin
 
 			when prepFC =>
 				new_calcint_next <= '1';
-				xint_next       <= 2;
-				yint_next       <= 2;
-				fcWDepthin_next <= 0;
-				depthin_next    <= 0;
+				xint_next        <= 2;
+				yint_next        <= 2;
+				fcWDepthin_next  <= 0;
+				depthin_next     <= 0;
 
 				state_next <= MACFC;
 
@@ -191,7 +213,9 @@ begin
 
 		end case;
 	end process;
-
+	----------------------------------------------------------
+	--                 Register Transfer                    --
+	----------------------------------------------------------	
 	process(clk, rst)
 	begin
 		if rst = '1' then

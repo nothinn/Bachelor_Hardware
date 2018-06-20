@@ -17,12 +17,12 @@
 -- -----------------------------------------------------------------------------
 
 library IEEE;
-    use IEEE.std_logic_1164.all;
-    use IEEE.numeric_std.all;
-    use IEEE.std_logic_unsigned.all;
-    use IEEE.math_real.all;
+use IEEE.std_logic_1164.all;
+use IEEE.numeric_std.all;
+use IEEE.std_logic_unsigned.all;
+use IEEE.math_real.all;
 
-    use work.Types.all;
+use work.Types.all;
 
 entity topRam is
 	generic(
@@ -51,22 +51,15 @@ end entity;
 
 architecture rtl of topRam is
 
-	--attribute DONT_TOUCH : string;
-	--attribute DONT_TOUCH of  ramGen : label is "TRUE";
-	--attribute DONT_TOUCH of  ramProcess : label is "TRUE";
-	--attribute DONT_TOUCH of  gen_trans : label is "TRUE";
-	--attribute DONT_TOUCH of  addressTranslator_inst : label is "TRUE";
-
-    ----------------------------------------------------------
-    --             Component declarations                   --
-    ----------------------------------------------------------
+	----------------------------------------------------------
+	--             Component declarations                   --
+	----------------------------------------------------------
 
 	component addressTranslator is
 		generic(
 			depth_size : integer := depth_size;
 			size       : integer := 5;
-			ram_size   : integer := 28;
-			NrOfInputs : integer := 8
+			ram_size   : integer := 28
 		);
 		port(
 			clk        : in  std_logic;
@@ -102,18 +95,19 @@ architecture rtl of topRam is
 		);
 	end component;
 
-
-    ----------------------------------------------------------
-    --             signal declarations                      --
-    ----------------------------------------------------------
+	----------------------------------------------------------
+	--             type and signal declarations             --
+	----------------------------------------------------------
 
 	type trans_block is array (integer range size**2 - 1 downto 0) of integer range 0 to size **2 - 1;
 	type trans_addr is array (integer range size**2 - 1 downto 0) of integer;
+	type type_doa is array (integer range 0 to size **2 - 1) of MAC_result;
+	type type_wea is array (integer range 0 to size **2 - 1) of std_logic;
 
-	signal blocknr_arr                         : trans_block;
-	signal blocknr_arr_reg                     : trans_block;
-	signal depth_addr_arr                      : trans_addr;
-	signal depth_addr_arr2                        : trans_addr;
+	signal blocknr_arr     : trans_block;
+	signal blocknr_arr_reg : trans_block;
+	signal depth_addr_arr  : trans_addr;
+	signal depth_addr_arr2 : trans_addr;
 
 	signal blocknr          : integer;
 	signal depth_addr       : integer;
@@ -126,9 +120,6 @@ architecture rtl of topRam is
 
 	signal blockValid : std_logic_vector(size**2 - 1 downto 0);
 	signal counter    : integer range 0 to NrOfInputs - 1;
-
-	type type_doa is array (integer range 0 to size **2 - 1) of MAC_result;
-	type type_wea is array (integer range 0 to size **2 - 1) of std_logic;
 
 	signal addrB : trans_addr;
 
@@ -149,6 +140,7 @@ architecture rtl of topRam is
 	------------------------------------
 	type addr_result_type is array (integer range size**2 - 1 downto 0) of integer;
 	type addr_result_arr_type is array (integer range size**2 - 1 downto 0) of addr_result_type;
+	type block_valid_type is array (0 to size**2 - 1, 0 to size**2 - 1) of std_logic;
 
 	signal translated_output : addr_result_arr_type;
 
@@ -157,11 +149,84 @@ architecture rtl of topRam is
 
 	signal ready2 : std_logic;
 
-	type block_valid_type is array (0 to size**2 - 1, 0 to size**2 - 1) of std_logic;
 	signal block_valid : block_valid_type;
 
 begin
 
+	----------------------------------------------------------
+	--            Instantiating the components              --
+	----------------------------------------------------------
+
+	--Generate translators for all the outputs of portB.
+	gen_trans : for I in 0 to size - 1 generate
+		gen_trans2 : for J in 0 to size - 1 generate
+			addressTranslator_inst : addressTranslator
+				generic map(
+					depth_size => depth_size,
+					size       => size,
+					ram_size   => ram_size
+				)
+				port map(
+					clk        => clk,
+					rst        => rst,
+					addressX   => addressX + (-size/2 + i),
+					addressY   => addressY + (-size/2 + j),
+					valid      => block_valid(i, j),
+					blocknr    => blocknr_arr(I + j*size),
+					blockValid => blockValid(I + j*size),
+					depth_addr => depth_addr_arr2(I + j*size)
+				);
+		end generate;
+	end generate;
+
+	--We only look at a single address on the way in.
+	addressTranslator_inst : addressTranslator
+		generic map(
+			depth_size => depth_size,
+			size       => size,
+			ram_size   => ram_size
+		)
+		port map(
+			clk        => clk,
+			rst        => rst,
+			addressX   => addressX,
+			addressY   => addressY,
+			valid      => wea,
+			blocknr    => blocknr,
+			blockValid => open,
+			depth_addr => depth_addr
+		);
+
+	ramGen : for i in 0 to size **2 - 1 generate
+		ram_inst : ram
+			generic map(
+				depth        => depth_size,
+				width        => ram_size,
+				filter_width => size
+			)
+			port map(
+				clk   => clk,
+				rst   => rst,
+				ena   => ena,
+				enb   => ena,           --enb,
+				addra => depth_addr_added,
+				addrb => depth_addr_arr(i), --addrb,
+				wea   => wea_int(i),
+				web   => '0',           --web,
+				dia   => muxData,
+				dib   => (others => '0'), --dib,
+				doa   => open,
+				dob   => doa_int(i)
+			);
+
+		----------------------------------------------------------
+		--                       Logic                          --
+		----------------------------------------------------------
+
+		ready <= '1' when counter = NrOfInputs - 1 else '0';
+
+		-- Cross bar logic (Input rounting)			
+	end generate;
 	gen_crossbar : for i in 0 to size**2 - 1 generate
 		gen_crossbar2 : for j in 0 to size**2 - 1 generate
 			process(all) is
@@ -191,6 +256,82 @@ begin
 			depth_addr_arr(i) <= to_integer(tmp);
 		end process;
 	end generate;
+
+	-- write enable logic
+	process(all) is
+	begin
+		if counter = 0 then
+			depth_addr_added <= depth_addr + counter + latchedDepth;
+			--We look at the translated address and decode if it should be a write enable.
+
+			for i in 0 to size**2 - 1 loop
+				wea_int(i) <= '0';
+			end loop;
+
+			--enable the ram corresponding to the chosen block.
+			if ready = '0' or ready2 = '0' then
+				wea_int(blocknr) <= '1';
+			else
+				wea_int(blocknr) <= '0';
+			end if;
+
+		else
+			depth_addr_added <= depth_addr_reg + counter + latchedDepth;
+
+			for i in 0 to size**2 - 1 loop
+				wea_int(i) <= '0';
+			end loop;
+
+			--enable the ram corresponding to the chosen block.
+			if ready = '0' or ready2 = '0' then
+				wea_int(blocknr_reg) <= '1';
+			else
+				wea_int(blocknr_reg) <= '0';
+			end if;
+		end if;
+	end process;
+
+	process(all) is
+	begin
+		muxData <= latchedInput(counter);
+	end process;
+
+	-- Out of bounds check and output rounting
+	ramProcess : process(all) is
+	begin
+		--if ena = '1' then
+		for x in -size/2 to size/2 loop
+			for y in -size/2 to size/2 loop
+
+				if addressX_reg2 + x < 0 or addressX_reg2 + x >= ram_size or addressY_reg2 + y < 0 or addressY_reg2 + y >= ram_size then
+					doa((x + 2) + size*(y + 2)) <= (others => '0');
+				else
+					doa((x + 2) + size*(y + 2)) <= doa_int(blocknr_arr_reg((x + 2) + (y + 2)*size));
+				end if;
+			end loop;
+		end loop;
+		--end if;
+	end process;
+
+	-- out of bounds check for address translators
+	translateValidProcess : process(all) is
+	begin
+		--if ena = '1' then
+		for x in -size/2 to size/2 loop
+			for y in -size/2 to size/2 loop
+				if (addressX + x) < 0 or (addressX + x) >= ram_size or (addressY + y) < 0 or (addressY + y) >= ram_size then
+					block_valid(x + 2, y + 2) <= '0';
+				else
+					block_valid(x + 2, y + 2) <= '1';
+				end if;
+			end loop;
+		end loop;
+		--end if;
+	end process;
+
+	----------------------------------------------------------
+	--                 Register Transfer                    --
+	----------------------------------------------------------	
 
 	process(clk, rst) is
 	begin
@@ -241,141 +382,5 @@ begin
 			end if;
 		end if;
 	end process;
-
-	ready <= '1' when counter = NrOfInputs - 1 else '0';
-
-	ramGen : for i in 0 to size **2 - 1 generate
-		ram_inst : ram
-			generic map(
-				depth        => depth_size,
-				width        => ram_size,
-				filter_width => size
-			)
-			port map(
-				clk   => clk,
-				rst   => rst,
-				ena   => ena,
-				enb   => ena,           --enb,
-				addra => depth_addr_added,
-				addrb => depth_addr_arr(i), --addrb,
-				wea   => wea_int(i),
-				web   => '0',           --web,
-				dia   => muxData,
-				dib   => (others => '0'), --dib,
-				doa   => open,
-				dob   => doa_int(i)
-			);
-	end generate;
-
-	process(all) is
-	begin
-		if counter = 0 then
-			depth_addr_added <= depth_addr + counter + latchedDepth;
-			--We look at the translated address and decode if it should be a write enable.
-
-			for i in 0 to size**2 - 1 loop
-				wea_int(i) <= '0';
-			end loop;
-
-			--enable the ram corresponding to the chosen block.
-			if ready = '0' or ready2 = '0' then
-				wea_int(blocknr) <= '1';
-			else
-				wea_int(blocknr) <= '0';
-			end if;
-
-		else
-			depth_addr_added <= depth_addr_reg + counter + latchedDepth;
-
-			for i in 0 to size**2 - 1 loop
-				wea_int(i) <= '0';
-			end loop;
-
-			--enable the ram corresponding to the chosen block.
-			if ready = '0' or ready2 = '0' then
-				wea_int(blocknr_reg) <= '1';
-			else
-				wea_int(blocknr_reg) <= '0';
-			end if;
-		end if;
-	end process;
-
-	process(all) is
-	begin
-		muxData <= latchedInput(counter);
-	end process;
-
-	ramProcess : process(all) is
-	begin
-		--if ena = '1' then
-		for x in -size/2 to size/2 loop
-			for y in -size/2 to size/2 loop
-
-				if addressX_reg2 + x < 0 or addressX_reg2 + x >= ram_size or addressY_reg2 + y < 0 or addressY_reg2 + y >= ram_size then
-					doa((x + 2) + size*(y + 2)) <= (others => '0');
-				else
-					doa((x + 2) + size*(y + 2)) <= doa_int(blocknr_arr_reg((x + 2) + (y + 2)*size));
-				end if;
-			end loop;
-		end loop;
-		--end if;
-	end process;
-
-	translateValidProcess : process(all) is
-	begin
-		--if ena = '1' then
-		for x in -size/2 to size/2 loop
-			for y in -size/2 to size/2 loop
-				if (addressX + x) < 0 or (addressX + x) >= ram_size or (addressY + y) < 0 or (addressY + y) >= ram_size then
-					block_valid(x + 2, y + 2) <= '0';
-				else
-					block_valid(x + 2, y + 2) <= '1';
-				end if;
-			end loop;
-		end loop;
-		--end if;
-	end process;
-
-	--Generate translators for all the outputs of portB.
-	gen_trans : for I in 0 to size - 1 generate
-		gen_trans2 : for J in 0 to size - 1 generate
-			addressTranslator_inst : addressTranslator
-				generic map(
-					depth_size => depth_size,
-					size       => size,
-					ram_size   => ram_size,
-					NrOfInputs => NrOfInputs
-				)
-				port map(
-					clk        => clk,
-					rst        => rst,
-					addressX   => addressX + (-size/2 + i),
-					addressY   => addressY + (-size/2 + j),
-					valid      => block_valid(i, j),
-					blocknr    => blocknr_arr(I + j*size),
-					blockValid => blockValid(I + j*size),
-					depth_addr => depth_addr_arr2(I + j*size)
-				);
-		end generate;
-	end generate;
-
-	--We only look at a single address on the way in.
-	addressTranslator_inst : addressTranslator
-		generic map(
-			depth_size => depth_size,
-			size       => size,
-			ram_size   => ram_size,
-			NrOfInputs => NrOfInputs
-		)
-		port map(
-			clk        => clk,
-			rst        => rst,
-			addressX   => addressX,
-			addressY   => addressY,
-			valid      => wea,
-			blocknr    => blocknr,
-			blockValid => open,
-			depth_addr => depth_addr
-		);
 
 end architecture;

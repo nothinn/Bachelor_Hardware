@@ -1,9 +1,26 @@
+-- -----------------------------------------------------------------------------
+--
+--  Project    : Hardware Accelerator for Image processing using an FPGA
+--             : Bachelor, DTU
+--             :
+--  Title      :  NeuralNetwork
+--             :
+--  Developers :  Anthon Vincent Riber - s154663@student.dtu.dk
+--             :  Simon Thye Andersen  - s154227@student.dtu.dk
+--             :
+--  Purpose    :  The top file for the full system, this connects all subsystems
+--			   :  and also have some logic. E.g. switching between in and output
+--			   :  memories.
+--             :
+--  Revision   :  1.0   20-06-18     Final version
+--             :
+-- -----------------------------------------------------------------------------
+
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 use IEEE.MATH_REAL.all;
 
-library work;
 use work.Types.all;
 use work.ConfigVHDL.all;
 
@@ -23,25 +40,10 @@ end entity;
 
 architecture rtl of NeuralNetwork is
 
-	--attribute DONT_TOUCH : string;
-	--attribute DONT_TOUCH of  topRam0_inst : label is "TRUE";
-	--attribute DONT_TOUCH of  topRam1_inst : label is "TRUE";
-	--attribute DONT_TOUCH of  muxProcess : label is "TRUE";
-	--attribute DONT_TOUCH of  fsm_inst : label is "TRUE";
-	--attribute DONT_TOUCH of  topfsm_inst : label is "TRUE";
-	--attribute DONT_TOUCH of  GEN_MACFull : label is "TRUE";
-	--attribute DONT_TOUCH of   ResultLogic: label is "TRUE";
+	----------------------------------------------------------
+	--             Component declarations                   --
+	----------------------------------------------------------
 
-	/*component FirstRom is
-        port (
-            clk      : in std_logic;
-            addressX : in integer range 0 to 27;
-            addressY : in integer range 0 to 27;
-            addressZ : in integer range 0 to 2;
-            output   : out unsigned(15 downto 0)
-        );
-    end component;
-    */
 	component MACFullFilter is
 		generic(
 			filter_offset : unsigned(natural(log2(real(nrOfInputs))) - 1 downto 0) := (others => '0')
@@ -252,6 +254,11 @@ architecture rtl of NeuralNetwork is
 		);
 	end component;
 
+	----------------------------------------------------------
+	--             signal declarations                      --
+	----------------------------------------------------------
+	type filter_array is array (NrOfInputs - 1 downto 0) of unsigned(5 downto 0);
+
 	--Pipeline signals for mac_output
 	signal we_ram_pipedfm      : std_logic;
 	signal addressXout_pipedfm : integer;
@@ -266,32 +273,7 @@ architecture rtl of NeuralNetwork is
 	signal filter_piped      : integer;
 	signal ram_data_piped    : ram_input(NrOfINputs - 1 downto 0);
 
-	signal input_mac : MAC_inputs;
-
-	signal filter : unsigned(5 downto 0);
-
-	signal addressX, addressX_reg, addressXOut, addressXOut_reg, addressXOut_reg1, addressXOut_reg2 : integer := 0;
-	signal addressY, addressY_reg, addressYOut, addressYOut_reg, addressYOut_reg1, addressYOut_reg2 : integer := 0;
-	signal addressZ, addressZ_reg                                                                   : integer; -- range 0 to 31;
-
-	signal hold, newCalc, done, calcMax, newMax : std_logic;
-	signal maxCounterOut                        : unsigned(1 downto 0);
-
-	signal depthWFCInt : integer;
-
-	signal depth    : unsigned(6 downto 0);
-	signal depthWFC : unsigned(8 downto 0);
-
-	signal MAC_ARRAY, MAX_ARRAY : ram_input(NrOfInputs - 1 downto 0);
-
-	signal we_ram : std_logic := '0';
-
-	signal writeEnable, writeEnableReg : std_logic;
-
-	signal pre_filter, filter_reg, filter_reg1 : integer;
-
-	type filter_array is array (NrOfInputs - 1 downto 0) of unsigned(5 downto 0);
-
+	-- FSM controlling the execution of a layer
 	signal filter_input    : filter_array;
 	signal innerStart      : std_logic;
 	signal innerDepth      : unsigned(6 downto 0);
@@ -302,16 +284,26 @@ architecture rtl of NeuralNetwork is
 	signal layerCount      : unsigned(layerCounterWidth - 1 downto 0);
 	signal innerDoneAck    : std_logic;
 
-	signal depth_reg                       : unsigned(6 downto 0);
-	signal depthWFC_reg                    : unsigned(8 downto 0);
-	signal innerConvFC_reg                 : std_logic;
-	signal filter_input_reg                : filter_array;
-	signal layercount_reg, layercount_reg2 : unsigned(layerCounterWidth - 1 downto 0);
-	signal hold_reg                        : std_logic;
-	signal newCalc_reg                     : std_logic;
+	-- delay control signals to match pipeline
 
-	signal newMax_reg  : std_logic;
-	signal calcMax_reg : std_logic;
+	signal writeEnable, writeEnableReg          : std_logic;
+	signal hold, newCalc, done, calcMax, newMax : std_logic;
+	signal maxCounterOut                        : unsigned(1 downto 0);
+	signal depth                                : unsigned(6 downto 0);
+	signal depthWFC                             : unsigned(8 downto 0);
+	signal depth_reg                            : unsigned(6 downto 0);
+	signal depthWFC_reg                         : unsigned(8 downto 0);
+	signal innerConvFC_reg                      : std_logic;
+	signal filter_input_reg                     : filter_array;
+	signal layercount_reg, layercount_reg2      : unsigned(layerCounterWidth - 1 downto 0);
+	signal hold_reg                             : std_logic;
+	signal newCalc_reg                          : std_logic;
+	signal newMax_reg                           : std_logic;
+	signal calcMax_reg                          : std_logic;
+
+	signal addressX, addressX_reg, addressXOut, addressXOut_reg, addressXOut_reg1, addressXOut_reg2 : integer := 0;
+	signal addressY, addressY_reg, addressYOut, addressYOut_reg, addressYOut_reg1, addressYOut_reg2 : integer := 0;
+	signal addressZ, addressZ_reg                                                                   : integer; -- range 0 to 31;
 
 	--Signals for ram
 	signal ram_ena : std_logic_vector(1 downto 0);
@@ -342,13 +334,15 @@ architecture rtl of NeuralNetwork is
 	signal uartDataStreamTx_ack : std_logic;
 	signal uartDataStreamRx     : std_logic_vector(7 downto 0);
 	signal uartDataStreamRx_stb : std_logic;
-	--signal uartToMem_en : std_logic;
-	signal uartToMem_we         : std_logic;
-	signal uartToMem_AddrX      : integer range 0 to layerWidthHeight(0) - 1;
-	signal uartToMem_AddrY      : integer range 0 to layerWidthHeight(0) - 1;
-	signal uartToMem_AddrZ      : integer range 0 to layerInputDepth(0) - 1;
-	signal uartToMem_DataWrite  : ram_input(0 downto 0);
 
+	--signal uartToMem_en : std_logic;
+	signal uartToMem_we        : std_logic;
+	signal uartToMem_AddrX     : integer range 0 to layerWidthHeight(0) - 1;
+	signal uartToMem_AddrY     : integer range 0 to layerWidthHeight(0) - 1;
+	signal uartToMem_AddrZ     : integer range 0 to layerInputDepth(0) - 1;
+	signal uartToMem_DataWrite : ram_input(0 downto 0);
+
+	-- binding signals
 	signal we_ram_reg                : std_logic;
 	signal resultReg, resultReg_next : ResultArray;
 
@@ -357,44 +351,25 @@ architecture rtl of NeuralNetwork is
 	signal filter_reg2 : integer;
 
 	signal value : std_logic_vector(15 downto 0);
-	--signal segment : std_logic_vector(6 downto 0);
-	--signal an : std_logic_vector(3 downto 0);
+
+	signal filter                              : unsigned(5 downto 0);
+	signal input_mac                           : MAC_inputs;
+	signal MAC_ARRAY, MAX_ARRAY                : ram_input(NrOfInputs - 1 downto 0);
+	signal depthWFCInt                         : integer;
+	signal we_ram                              : std_logic := '0';
+	signal pre_filter, filter_reg, filter_reg1 : integer;
 
 begin
+
+	----------------------------------------------------------------------------
+	--                           Istantiating clock divider                   --
+	----------------------------------------------------------------------------
 
 	clock_inst : clk_wiz_0
 		port map(
 			clk_out1 => clk,
 			clk_in1  => clk_in
 		);
-
-	process(all) is
-	begin
-		case number is
-			when "0000" =>
-				value <= std_logic_vector(resultReg(0));
-			when "0001" =>
-				value <= std_logic_vector(resultReg(1));
-			when "0010" =>
-				value <= std_logic_vector(resultReg(2));
-			when "0011" =>
-				value <= std_logic_vector(resultReg(3));
-			when "0100" =>
-				value <= std_logic_vector(resultReg(4));
-			when "0101" =>
-				value <= std_logic_vector(resultReg(5));
-			when "0110" =>
-				value <= std_logic_vector(resultReg(6));
-			when "0111" =>
-				value <= std_logic_vector(resultReg(7));
-			when "1000" =>
-				value <= std_logic_vector(resultReg(8));
-			when "1001" =>
-				value <= std_logic_vector(resultReg(9));
-			when others =>
-				value <= "0001001000110100";
-		end case;
-	end process;
 
 	----------------------------------------------------------------------------
 	--                           Istantiating display                         --
@@ -475,21 +450,6 @@ begin
 			ready     => open
 		);
 
-	/*  
-    --This is to be subsituted with ram when ready.
-    gen_romX : for x in -2 to 2 generate
-        gen_romY : for y in -2 to 2 generate
-            FirstRom_inst : FirstRom
-                port map( --Reg to match ram
-                    clk      => clk,
-                    addressX => (addressX_reg + x),
-                    addressY => (addressY_reg + y),
-                    addressZ => addressZ_reg,
-                    output   => ram_data_out_first((x + 2) + (y + 2)*5)
-                );
-        end generate;
-    end generate;
-    */
 	----------------------------------------------------------------------------
 	--        Pipeline for RAM blocks                                         --
 	----------------------------------------------------------------------------  
@@ -534,49 +494,6 @@ begin
 			filter_piped      => filter_pipedfm,
 			mac_array_piped   => mac_array_piped
 		);
-
-	----------------------------------------------------------------------------
-	--        Multiplexer for handling the three ram blocks                   --
-	----------------------------------------------------------------------------   
-	muxProcess : process(all) is
-	begin
-		if layerCount = 0 then          -- to_unsigned(0,layerCount'length) then
-			input_mac <= ram_data_out_first;
-		elsif layerCount(0) = '0' then
-			input_mac <= ram_data_out0;
-		else
-			input_mac <= ram_data_out1;
-		end if;
-
-		ram_addressXStart <= addressX;
-		ram_addressYStart <= addressY;
-		ram_depthStart    <= addressZ;
-
-		if layerCount_reg(0) = '0' then
-			ram_addressX0 <= addressX;
-			ram_addressY0 <= addressY;
-			ram_depth0    <= addressZ;
-
-			ram_addressX1 <= addressXOut_piped;
-			ram_addressY1 <= addressYOut_piped;
-			ram_depth1    <= filter_piped;
-
-			ram_wea(0) <= '0';
-			ram_wea(1) <= '1' and we_ram_piped;
-
-		else
-			ram_addressX1 <= addressX;
-			ram_addressY1 <= addressY;
-			ram_depth1    <= addressZ;
-
-			ram_addressX0 <= addressXOut_piped;
-			ram_addressY0 <= addressYOut_piped;
-			ram_depth0    <= filter_piped;
-
-			ram_wea(1) <= '0';
-			ram_wea(0) <= '1' and we_ram_piped;
-		end if;
-	end process;
 
 	----------------------------------------------------------------------------
 	--                         Generate macfullfilters                        --
@@ -707,8 +624,87 @@ begin
 			rx                  => rx
 		);
 
+	----------------------------------------------------------
+	--                       Logic                          --
+	----------------------------------------------------------		
+
 	----------------------------------------------------------------------------
-	--                         Logic for saving the results                   --
+	--        Multiplexer for handling the three ram blocks                   --
+	----------------------------------------------------------------------------   
+	muxProcess : process(all) is
+	begin
+		if layerCount = 0 then          -- to_unsigned(0,layerCount'length) then
+			input_mac <= ram_data_out_first;
+		elsif layerCount(0) = '0' then
+			input_mac <= ram_data_out0;
+		else
+			input_mac <= ram_data_out1;
+		end if;
+
+		ram_addressXStart <= addressX;
+		ram_addressYStart <= addressY;
+		ram_depthStart    <= addressZ;
+
+		if layerCount_reg(0) = '0' then
+			ram_addressX0 <= addressX;
+			ram_addressY0 <= addressY;
+			ram_depth0    <= addressZ;
+
+			ram_addressX1 <= addressXOut_piped;
+			ram_addressY1 <= addressYOut_piped;
+			ram_depth1    <= filter_piped;
+
+			ram_wea(0) <= '0';
+			ram_wea(1) <= '1' and we_ram_piped;
+
+		else
+			ram_addressX1 <= addressX;
+			ram_addressY1 <= addressY;
+			ram_depth1    <= addressZ;
+
+			ram_addressX0 <= addressXOut_piped;
+			ram_addressY0 <= addressYOut_piped;
+			ram_depth0    <= filter_piped;
+
+			ram_wea(1) <= '0';
+			ram_wea(0) <= '1' and we_ram_piped;
+		end if;
+	end process;
+
+	----------------------------------------------------------------------------
+	--                         Logic for 7 segment display                    --
+	----------------------------------------------------------------------------    
+
+	process(all) is
+	begin
+		case number is
+			when "0000" =>
+				value <= std_logic_vector(resultReg(0));
+			when "0001" =>
+				value <= std_logic_vector(resultReg(1));
+			when "0010" =>
+				value <= std_logic_vector(resultReg(2));
+			when "0011" =>
+				value <= std_logic_vector(resultReg(3));
+			when "0100" =>
+				value <= std_logic_vector(resultReg(4));
+			when "0101" =>
+				value <= std_logic_vector(resultReg(5));
+			when "0110" =>
+				value <= std_logic_vector(resultReg(6));
+			when "0111" =>
+				value <= std_logic_vector(resultReg(7));
+			when "1000" =>
+				value <= std_logic_vector(resultReg(8));
+			when "1001" =>
+				value <= std_logic_vector(resultReg(9));
+			when others =>
+				value <= "0001001000110100";
+		end case;
+	end process;
+
+	----------------------------------------------------------------------------
+	--                         Logic for saving the final results             --
 	----------------------------------------------------------------------------    
 
 	ResultLogic : process(all)
@@ -752,8 +748,9 @@ begin
 	depthWFC <= to_unsigned(depthWFCInt, depthWFC'length);
 
 	filter <= to_unsigned(pre_filter, 6);
+
 	----------------------------------------------------------------------------
-	--                            Clocked registers                           --
+	--                            Registers Transfer                          --
 	----------------------------------------------------------------------------
 
 	process(clk, maxCounterOut(0 downto 0), maxCounterOut(1 downto 1), rst)
@@ -763,19 +760,12 @@ begin
 			we_ram         <= '0';
 
 			addressX_reg <= 0;
-			--addressX_reg2 <= 0;
-
 			addressY_reg <= 0;
-			--addressY_reg2 <= 0;
-
 			addressZ_reg <= 0;
 
 			filter_reg  <= 0;
 			filter_reg1 <= 0;
 			filter_reg2 <= 0;
-
-			--maxCounterOutx <= maxCounterOut(0 downto 0);
-			--maxCounterOuty <= maxCounterOut(1 downto 1);
 
 			depth_reg        <= (others => '0');
 			depthWFC_reg     <= (others => '0');
@@ -804,10 +794,8 @@ begin
 			we_ram_reg <= we_ram;
 
 			addressX_reg <= addressX;
-			--addressX_reg2 <= addressX_reg;
 
 			addressY_reg <= addressY;
-			--addressY_reg2 <= addressY_reg;
 
 			addressZ_reg     <= addressZ;
 			addressXOut_reg  <= addressXOut;
@@ -819,8 +807,6 @@ begin
 			filter_reg  <= pre_filter;
 			filter_Reg1 <= filter_reg;
 			filter_reg2 <= filter_reg1;
-			--maxCounterOutx <= maxCounterOut(0 downto 0);
-			--maxCounterOuty <= maxCounterOut(1 downto 1);
 
 			depth_reg        <= depth;
 			depthWFC_reg     <= depthWFC;

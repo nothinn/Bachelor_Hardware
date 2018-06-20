@@ -1,8 +1,27 @@
+-- -----------------------------------------------------------------------------
+--
+--  Project    : Hardware Accelerator for Image processing using an FPGA
+--             : Bachelor, DTU
+--             :
+--  Title      :  RAM
+--             :
+--  Developers :  Anthon Vincent Riber - s154663@student.dtu.dk
+--             :  Simon Thye Andersen  - s154227@student.dtu.dk
+--             :
+--  Purpose    :  RAM block for the memory components
+--             :
+--  Revision   :  1.0   20-06-18     Final version
+--             :
+--
+-- -----------------------------------------------------------------------------
+
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
-use work.Types.all;
 use IEEE.MATH_REAL.all;
+
+use work.Types.all;
+
 entity ram is
 	generic(
 		depth        : integer := 64;
@@ -30,22 +49,21 @@ architecture rtl of ram is
 	signal RAM : mem_block((depth * integer((Ceil(real(width)/real(filter_width)))) **2 - 1) downto 0);
 
 begin
+
 	process(clk)
 	begin
 		if rst = '1' then
 			dob <= (others => '0');
 		elsif rising_edge(clk) then
 			if ena = '1' then
-				--doa <= ram(addra mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 ));
 				if wea = '1' then
 					ram(addra) <= dia;
 				end if;
 			end if;
 
 			if enb = '1' then
-				dob <= RAM(addrb);      --mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 ));
+				dob <= RAM(addrb);      --mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 )); -- old approach
 				if web = '1' then
-					--ram(addrb) <= dib;
 				end if;
 			end if;
 		end if;

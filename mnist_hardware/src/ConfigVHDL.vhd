@@ -1,8 +1,25 @@
+-- -----------------------------------------------------------------------------
+--
+--  Project    : Hardware Accelerator for Image processing using an FPGA
+--             : Bachelor, DTU
+--             :
+--  Title      :  ConfigVHDL
+--             :
+--  Developers :  Anthon Vincent Riber - s154663@student.dtu.dk
+--             :  Simon Thye Andersen  - s154227@student.dtu.dk
+--             :
+--  Purpose    :  A package that documents constants describing the Network  
+--             :  that the accelerator should run. These are mostly used in the  
+--             :  FSMs
+--             :
+--  Revision   :  1.0   20-06-18     Final version
+--             :
+-- -----------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
 use IEEE.numeric_std.all; 
 use IEEE.math_real.all;
---use work.Types.all;
+
 
 package ConfigVHDL is
 

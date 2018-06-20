@@ -1,6 +1,23 @@
+-- -----------------------------------------------------------------------------
+--
+--  Project    : Hardware Accelerator for Image processing using an FPGA
+--             : Bachelor, DTU
+--             :
+--  Title      :  UARTController
+--             :
+--  Developers :  Anthon Vincent Riber - s154663@student.dtu.dk
+--             :  Simon Thye Andersen  - s154227@student.dtu.dk
+--             :
+--  Purpose    :  UART controller for downloading input image
+--             :
+--  Revision   :  1.0   20-06-18     Final version
+--             :
+-- -----------------------------------------------------------------------------
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+
 use work.Types.all;
 use work.configVHDL.all;
 
@@ -12,7 +29,7 @@ entity UartController is
 		uartDataStreamTx_stb : out std_logic;
 		uartDataStreamTx_ack : in  std_logic;
 		uartDataStreamRx     : in  std_logic_vector(7 downto 0);
-		uartDataStreamRx_stb : in std_logic;
+		uartDataStreamRx_stb : in  std_logic;
 		uartToMem_en         : out std_logic;
 		uartToMem_we         : out std_logic;
 		uartToMem_AddrX      : out integer range 0 to layerWidthHeight(0) - 1;
@@ -23,6 +40,10 @@ entity UartController is
 end entity UartController;
 
 architecture RTL of UartController is
+
+	----------------------------------------------------------
+	--            type and signal declarations              --
+	----------------------------------------------------------
 
 	type stateType is (WaitForDownload, loadByte0, loadByte1, save);
 
@@ -35,6 +56,10 @@ begin
 	uartToMem_AddrY     <= addrY;
 	uartToMem_AddrZ     <= addrZ;
 	uartToMem_DataWrite <= WriteData;
+
+	----------------------------------------------------------
+	--                     FSM Logic                        --
+	----------------------------------------------------------		
 
 	process(all)
 	begin
@@ -93,22 +118,25 @@ begin
 					end if;
 				end if;
 		end case;
-        
-        if(rst = '1') then
-            state <= WaitForDownload;
-            addrX <= 0;
-            addrY <= 0;
-            addrZ <= 0;
-            WriteData(0) <= (others => '0');
-        elsif rising_edge(clk) then
-            state <= stateNext;
-            addrX <= addrXNext;
-            addrY <= addrYNext;
-            addrZ <= addrZNext;
-            WriteData(0) <= WriteDataNext(0);
-        end if;
-            
-        
+
+		----------------------------------------------------------
+		--                 Register Transfer                    --
+		----------------------------------------------------------	
+
+		if (rst = '1') then
+			state        <= WaitForDownload;
+			addrX        <= 0;
+			addrY        <= 0;
+			addrZ        <= 0;
+			WriteData(0) <= (others => '0');
+		elsif rising_edge(clk) then
+			state        <= stateNext;
+			addrX        <= addrXNext;
+			addrY        <= addrYNext;
+			addrZ        <= addrZNext;
+			WriteData(0) <= WriteDataNext(0);
+		end if;
+
 	end process;
 
 end architecture RTL;

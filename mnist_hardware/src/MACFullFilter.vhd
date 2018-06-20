@@ -13,17 +13,15 @@
 --             :
 --  Revision   :  1.0   20-06-18     Final version
 --             :
---
 -- -----------------------------------------------------------------------------
 
 library ieee;
-    use ieee.std_logic_1164.all;
-    use ieee.numeric_std.all;
-    use IEEE.math_real.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use IEEE.math_real.all;
 
-    use work.types.all;
-    use work.configVHDL.all;
-
+use work.types.all;
+use work.configVHDL.all;
 
 entity MACFullFilter is
 	generic(
@@ -46,11 +44,10 @@ end entity MACFullFilter;
 
 architecture RTL of MACFullFilter is
 
+	----------------------------------------------------------
+	--             Component declarations                   --
+	----------------------------------------------------------
 
-    ----------------------------------------------------------
-    --             Component declarations                   --
-    ----------------------------------------------------------
-    
 	component MAC
 		port(
 			clk     : in  std_logic;
@@ -86,34 +83,31 @@ architecture RTL of MACFullFilter is
 			output : out signed(7 downto 0)
 		);
 	end component;
-    
-    
-    
-    ----------------------------------------------------------
-    --             signal declarations                      --
-    ----------------------------------------------------------
-    
-    signal layerResReg, nextLayerResReg        : signedNeuron;
-    signal inputs                              : MAC_inputs;
-    signal weights                             : MAC_weights;
-    signal macRes                              : MAC_output;
-    signal AddSatCheck, newCalcMux, holdMux    : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 1 + 5 + 1 - 1) downto 0);
-    signal concatRight                         : signed(fixWeightright + inferredWeightBits + 1 - 1 downto 0);
-    signal concatLeft                          : signed((fixWeightleft - 1) + 5 - 1 downto 0);
-    signal newcalc_reg, newcalc_reg0, hold_reg : std_logic;
-    signal bias                                : signedNeuron;
-    signal addBiasOut                          : signedNeuron;
-    signal ROMDepth                            : unsigned(8 downto 0);
-    signal biasOut                             : signed(7 downto 0);
-    signal filter_reg, filter_reg1, filter_reg2: unsigned(5 downto 0);
+
+	----------------------------------------------------------
+	--             signal declarations                      --
+	----------------------------------------------------------
+
+	signal layerResReg, nextLayerResReg         : signedNeuron;
+	signal inputs                               : MAC_inputs;
+	signal weights                              : MAC_weights;
+	signal macRes                               : MAC_output;
+	signal AddSatCheck, newCalcMux, holdMux     : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 1 + 5 + 1 - 1) downto 0);
+	signal concatRight                          : signed(fixWeightright + inferredWeightBits + 1 - 1 downto 0);
+	signal concatLeft                           : signed((fixWeightleft - 1) + 5 - 1 downto 0);
+	signal newcalc_reg, newcalc_reg0, hold_reg  : std_logic;
+	signal bias                                 : signedNeuron;
+	signal addBiasOut                           : signedNeuron;
+	signal ROMDepth                             : unsigned(8 downto 0);
+	signal biasOut                              : signed(7 downto 0);
+	signal filter_reg, filter_reg1, filter_reg2 : unsigned(5 downto 0);
 
 begin
 
-    
-    ----------------------------------------------------------
-    --            Instantiating the components              --
-    ----------------------------------------------------------
-    
+	----------------------------------------------------------
+	--            Instantiating the components              --
+	----------------------------------------------------------
+
 	MAC1 : MAC
 		port map(
 			clk     => clk,
@@ -123,8 +117,8 @@ begin
 			results => macRes
 		);
 
-    inputs <= input;
-    
+	inputs <= input;
+
 	biasRom1 : biasRom
 		port map(
 			clk    => clk,
@@ -153,9 +147,9 @@ begin
 		end generate makeROMsx;
 	end generate makeROMsy;
 
-    ----------------------------------------------------------
-    --     Control signals and saturation check             --
-    ----------------------------------------------------------
+	----------------------------------------------------------
+	--     Control signals and saturation check             --
+	----------------------------------------------------------
 
 	makeMuxLogic : process(all)
 	begin
@@ -164,6 +158,8 @@ begin
 		AddSatCheck <= newCalcMux + holdMux;
 		concatLeft  <= (others => '0');
 		concatRight <= (others => '0');
+
+		-- Multiplexer logic
 		case hold_reg is
 			when '1' =>
 				holdMux <= (others => '0');
@@ -173,13 +169,6 @@ begin
 				else
 					holdMux <= '1' & macRes;
 				end if;
-		end case;
-
-		case biasOut(biasOut'length - 1) is
-			when '1' =>
-				bias <= "111111111" & biasOut;
-			when others =>
-				bias <= "000000000" & biasOut;
 		end case;
 
 		case newCalc_reg is
@@ -193,9 +182,17 @@ begin
 					concatLeft <= (others => '1');
 					newCalcMux <= '1' & concatLeft & layerResReg & concatRight;
 				end if;
-
 		end case;
 
+		-- Extend bias for arthemetic
+		case biasOut(biasOut'length - 1) is
+			when '1' =>
+				bias <= "111111111" & biasOut;
+			when others =>
+				bias <= "000000000" & biasOut;
+		end case;
+
+		-- Set depth signal for weightROM as two signals is used for Conv or FC layer 
 		case convOrFC is
 			when '1' =>
 				ROMDepth <= depthFC;
@@ -204,7 +201,7 @@ begin
 				ROMDepth <= "00" & depth;
 		end case;
 
-		--check for saturation
+		--Check for saturation
 		case AddSatCheck(AddSatCheck'length - 1 downto (AddSatCheck'length - 1) - 1 - 5 - (fixWeightleft - 1)) is -- first -1 to have the extra bit possiple by the addition. secind -1 To look at the sign aswell
 			when (AddSatCheck(AddSatCheck'length - 1 downto (AddSatCheck'length - 1) - 1 - 5 - (fixWeightleft - 1))'range => '1') => -- the result has not meet negative saturation
 				nextLayerResReg <= AddSatCheck((AddSatCheck'length - 1) - 1 - 5 - (fixWeightleft - 1) downto fixWeightright + inferredWeightBits + 1);
@@ -212,14 +209,13 @@ begin
 				nextLayerResReg <= AddSatCheck((AddSatCheck'length - 1) - 1 - 5 - (fixWeightleft - 1) downto fixWeightright + inferredWeightBits + 1);
 			when others =>              -- saturation detected
 				if AddSatCheck(AddSatCheck'length - 1) = '0' then -- "overflow" saturation detected
-					nextLayerResReg <=  (nextLayerResReg'length - 1 => '0', others => '1'); -- highest possiple number is passed
+					nextLayerResReg <= (nextLayerResReg'length - 1 => '0', others => '1'); -- highest possiple number is passed
 				else
-					nextLayerResReg <=  (nextLayerResReg'length - 1 => '1', others => '0'); -- lowest possiple number is passed
+					nextLayerResReg <= (nextLayerResReg'length - 1 => '1', others => '0'); -- lowest possiple number is passed
 				end if;
 		end case;
 
 		-- bias and reLU
-
 		addBiasOut <= layerResReg + bias;
 		if addBiasOut(addBiasOut'length - 1) = '1' then
 			result <= (others => '0');
@@ -229,12 +225,10 @@ begin
 
 	end process makeMuxLogic;
 
-    
-    
-    ----------------------------------------------------------
-    --            Register description                      --
-    ----------------------------------------------------------
-    
+	----------------------------------------------------------
+	--            Register Transfer                         --
+	----------------------------------------------------------
+
 	registers : process(clk, rst) is
 	begin
 		if rst = '1' then

@@ -1,6 +1,24 @@
+-- -----------------------------------------------------------------------------
+--
+--  Project    : Hardware Accelerator for Image processing using an FPGA
+--             : Bachelor, DTU
+--             :
+--  Title      :  topFSM
+--             :
+--  Developers :  Anthon Vincent Riber - s154663@student.dtu.dk
+--             :  Simon Thye Andersen  - s154227@student.dtu.dk
+--             :
+--  Purpose    :  FSM controlling the full system.
+--             :
+--  Revision   :  1.0   20-06-18     Final version
+--             :
+--
+-- -----------------------------------------------------------------------------
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+
 use work.types.all;
 use work.ConfigVHDL.all;
 
@@ -24,12 +42,21 @@ end entity topFSM;
 
 architecture RTL of topFSM is
 
-	type state_type is (idle, runLayer, innerDoneState, allDone);
-	signal state, state_next : state_type;
+	----------------------------------------------------------
+	--             type and signal declarations             --
+	----------------------------------------------------------	
 
-	signal layer, layerNext : unsigned(layerCounterWidth - 1 downto 0);
+	type state_type is (idle, runLayer, innerDoneState, allDone);
+
+	signal state, state_next : state_type;
+	signal layer, layerNext  : unsigned(layerCounterWidth - 1 downto 0);
 
 begin
+
+	----------------------------------------------------------
+	--                     FSM Logic                        --
+	----------------------------------------------------------	
+
 	innerDepth      <= to_unsigned(layerInputDepth(to_integer(layer)), innerDepth'length);
 	innerXMax       <= to_unsigned(layerWidthHeight(to_integer(layer)), innerXMax'length);
 	innerYMax       <= to_unsigned(layerWidthHeight(to_integer(layer)), innerYMax'length);
@@ -78,6 +105,10 @@ begin
 		end case;
 
 	end process;
+
+	----------------------------------------------------------
+	--                 Register Transfer                    --
+	----------------------------------------------------------	
 
 	process(clk, rst)
 	begin
