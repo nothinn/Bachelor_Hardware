@@ -39,11 +39,12 @@ architecture RTL of MAC is
 	type MAC_DSP_outputs is array (24 downto 0) of signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 1 + 1 - 1) downto 0); -- the size of a product is is the size of the sum of the multiplier and the multiplicant 
 	type Weight_w_inferedbits_resized is array (24 downto 0) of signed((fixWeightleft + fixWeightright + inferredWeightBits + 1 - 1) downto 0); -- plus 1 is to pad to match bit significance before mult
 
-	signal fullWeights     : Weight_w_inferedbits_resized;
-	signal signedNeruons   : signedNeuronsType;
+	signal fullWeights, fullWeightsreg1     : Weight_w_inferedbits_resized;
+	signal signedNeruons, signedNeruonsReg1   : signedNeuronsType;
 	signal inferredBitsPos : signed(inferredWeightBits - 1 downto 0);
 	signal inferredBitsNeg : signed(inferredWeightBits - 1 downto 0);
 	signal DSP_outputs     : MAC_DSP_outputs;
+	signal MACOutReg1, MACOutReg2, MACOutReg3, MACOut : MAC_output;
 
 begin
 
@@ -65,6 +66,7 @@ begin
 				fullWeights(I) <= weight(I)(fixWeightleft + fixWeightright - 1 downto fixWeightright) & inferredBitsNeg & weight(I)(fixWeightright - 1 downto 0) & "0";
 			end if;
 			signedNeruons(I) <= "0" & signed(neurons(I)); --input is allways posative or zero
+			
 		end loop infferBits;
 
 		-- Multiplication
@@ -88,8 +90,32 @@ begin
 			tempAdd := tempAdd + to_integer(dsp_outputs(i));
 		end loop add;
 
-		results <= to_signed(tempAdd, DSP_outputs(1)'length - 1 + 5); -- +5: 25 additions can lead to a binary number that needs 5 more bit to be represented (LOG2(5))
-
+		MACOut <= to_signed(tempAdd, DSP_outputs(1)'length - 1 + 5); -- +5: 25 additions can lead to a binary number that needs 5 more bit to be represented (LOG2(5))
+		results <= MACOutReg3;
 	end process;
+	
+	--Register transfer
+	process(all)
+	begin
+		if rising_edge(clk) then
+			if rst = '1' then
+				for I in 0 to 24 loop
+					fullWeightsreg1(I) <= (others => '0');
+					signedNeruonsReg1(I) <= (others => '0');
+				end loop;
+				MACOutReg1 <= (others  => '0');
+				MACOutReg2 <= (others  => '0');
+				MACOutReg3 <= (others  => '0');
+			else
+				fullWeightsreg1 <= fullWeights;
+				signedNeruonsReg1 <= signedNeruons;
+				MACOutReg1 <= MACOut;
+				MACOutReg2 <= MACOutReg1;
+				MACOutReg3 <= MACOutReg2;
+			end if;
+		end if;
+	end process;
+		
+		
 
 end architecture RTL;
