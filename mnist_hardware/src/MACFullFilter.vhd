@@ -231,24 +231,24 @@ begin
 
 	registers : process(clk, rst) is
 	begin
-		if rst = '1' then
-			layerResReg  <= X"0000" & "0";
-			newcalc_reg0 <= '0';
-			newcalc_reg  <= '0';
-			hold_reg     <= '0';
-			filter_reg   <= (others => '0');
-			filter_reg1  <= (others => '0');
-			filter_reg2  <= (others => '0');
-
-		elsif rising_edge(clk) then
-			layerResReg  <= nextLayerResReg;
-			newcalc_reg0 <= newcalc;
-			newcalc_reg  <= newcalc_reg0;
-			hold_reg     <= hold;
-			filter_reg   <= filter;
-			filter_reg1  <= filter_reg;
-			filter_reg2  <= filter_reg1;
-
+		if rising_edge(clk) then
+			if rst = '1' then
+				layerResReg  <= X"0000" & "0";
+				newcalc_reg0 <= '0';
+				newcalc_reg  <= '0';
+				hold_reg     <= '0';
+				filter_reg   <= (others => '0');
+				filter_reg1  <= (others => '0');
+				filter_reg2  <= (others => '0');
+			else
+				layerResReg  <= nextLayerResReg;
+				newcalc_reg0 <= newcalc;
+				newcalc_reg  <= newcalc_reg0;
+				hold_reg     <= hold;
+				filter_reg   <= filter;
+				filter_reg1  <= filter_reg;
+				filter_reg2  <= filter_reg1;
+			end if;
 		end if;
 	end process registers;
 

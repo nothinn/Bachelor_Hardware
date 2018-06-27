@@ -123,18 +123,21 @@ begin
 		--                 Register Transfer                    --
 		----------------------------------------------------------	
 
-		if (rst = '1') then
-			state        <= WaitForDownload;
-			addrX        <= 0;
-			addrY        <= 0;
-			addrZ        <= 0;
-			WriteData(0) <= (others => '0');
-		elsif rising_edge(clk) then
-			state        <= stateNext;
-			addrX        <= addrXNext;
-			addrY        <= addrYNext;
-			addrZ        <= addrZNext;
-			WriteData(0) <= WriteDataNext(0);
+		
+		if rising_edge(clk) then
+			if (rst = '1') then
+				state        <= WaitForDownload;
+				addrX        <= 0;
+				addrY        <= 0;
+				addrZ        <= 0;
+				WriteData(0) <= (others => '0');
+			else
+				state        <= stateNext;
+				addrX        <= addrXNext;
+				addrY        <= addrYNext;
+				addrZ        <= addrZNext;
+				WriteData(0) <= WriteDataNext(0);
+			end if;
 		end if;
 
 	end process;

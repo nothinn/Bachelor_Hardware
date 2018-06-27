@@ -52,18 +52,21 @@ begin
 
 	process(clk)
 	begin
-		if rst = '1' then
-			dob <= (others => '0');
-		elsif rising_edge(clk) then
-			if ena = '1' then
-				if wea = '1' then
-					ram(addra) <= dia;
+		
+		if rising_edge(clk) then
+			if rst = '1' then
+				dob <= (others => '0');
+			else
+				if ena = '1' then
+					if wea = '1' then
+						ram(addra) <= dia;
+					end if;
 				end if;
-			end if;
 
-			if enb = '1' then
-				dob <= RAM(addrb);      --mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 )); -- old approach
-				if web = '1' then
+				if enb = '1' then
+					dob <= RAM(addrb);      --mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 )); -- old approach
+					if web = '1' then
+					end if;
 				end if;
 			end if;
 		end if;

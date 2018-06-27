@@ -73,23 +73,23 @@ begin
 		filter_mid(0)      <= filter;
 		ram_data_mid(0)    <= ram_data;
 
-		if rst = '0' then
-			we_ram_mid      <= (others => '0');
-			addressXout_mid <= (others => 0);
-			addressYout_mid <= (others => 0);
-			filter_mid      <= (others => 0);
-			ram_data_mid    <= (others => (others => (others => '0')));
+		if rising_edge(clk) then
+			if rst = '1' then
+				we_ram_mid      <= (others => '0');
+				addressXout_mid <= (others => 0);
+				addressYout_mid <= (others => 0);
+				filter_mid      <= (others => 0);
+				ram_data_mid    <= (others => (others => (others => '0')));
+			else
 
-		elsif rising_edge(clk) then
-
-			for i in 1 to nrOfDelays loop
-				we_ram_mid(i)      <= we_ram_mid(i - 1);
-				addressXout_mid(i) <= addressXout_mid(i - 1);
-				addressYout_mid(i) <= addressYout_mid(i - 1);
-				filter_mid(i)      <= filter_mid(i - 1);
-				ram_data_mid(i)    <= ram_data_mid(i - 1);
-			end loop;
-
+				for i in 1 to nrOfDelays loop
+					we_ram_mid(i)      <= we_ram_mid(i - 1);
+					addressXout_mid(i) <= addressXout_mid(i - 1);
+					addressYout_mid(i) <= addressYout_mid(i - 1);
+					filter_mid(i)      <= filter_mid(i - 1);
+					ram_data_mid(i)    <= ram_data_mid(i - 1);
+				end loop;
+			end if;
 		end if;
 
 		we_ram_piped      <= we_ram_mid(nrOfDelays);
