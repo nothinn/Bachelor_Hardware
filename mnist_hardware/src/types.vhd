@@ -25,8 +25,8 @@ use work.ConfigVHDL.all;
 
 package Types is
 
-	constant CLOCK_FREQ : Integer := 62_000_000; -- Used for UART configuration
-	constant NrOfInputs : integer := 8; -- configured number of MACFullFilter
+	constant CLOCK_FREQ : Integer := 130_000_000; -- Used for UART configuration
+	constant NrOfInputs : integer := 2; -- configured number of MACFullFilter
 
 	constant MaxSizeOfFilterDepth : Integer := 64;
 	constant NumberOfStepsOfRam   : Integer := 6*6;
