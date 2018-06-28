@@ -75,7 +75,7 @@ begin
 				DSP_outputs <= (others => (others => '0'));
 			else
 				mult : for I in 0 to 24 loop -- the multiplication signals know support the full width of the greatest possiple result
-					DSP_outputs(I) <= fullWeights(I) * signedNeruons(I);
+					DSP_outputs(I) <= fullWeightsreg1(I) * signedNeruonsreg1(I);
 				end loop mult;
 			end if;
 		end if;
