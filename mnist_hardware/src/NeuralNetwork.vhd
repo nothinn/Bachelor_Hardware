@@ -716,7 +716,7 @@ begin
 		if (we_ram_reg9 = '1') and (innerConvFC_reg9 = '1') then
 
 			for I in 0 to NrOfInputs - 1 loop
-				if (filter_piped + I < layerTotFilters(nrOfLayers - 1)) then
+				if (filter_reg10 + I < layerTotFilters(nrOfLayers - 1)) then
 					resultreg_next(I + filter_reg10) <= ram_data_in(I);
 				end if;
 			end loop;
