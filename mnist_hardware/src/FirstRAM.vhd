@@ -108,10 +108,10 @@ architecture rtl of topFirstRam is
 
 	signal depthb_reg : integer range 0 to depth_size - 1;
 
-	signal blocknr_arr     : trans_block;
-	signal blocknr_arr_reg : trans_block;
-	signal depth_addr_arr  : trans_addr;
-	signal depth_addr_arr2 : trans_addr;
+	signal blocknr_arr                                                                             : trans_block;
+	signal blocknr_arr_reg, blocknr_arr_reg2, blocknr_arr_reg3, blocknr_arr_reg4, blocknr_arr_reg5 : trans_block; -- 2 to 5 due to RAM pipeline
+	signal depth_addr_arr                                                                          : trans_addr;
+	signal depth_addr_arr2                                                                         : trans_addr;
 
 	signal blocknr          : integer;
 	signal depth_addr       : integer;
@@ -133,10 +133,10 @@ architecture rtl of topFirstRam is
 	signal doa_int : mac_inputs;
 	signal wea_int : type_wea;
 
-	signal addressX_reg  : integer range 0 to ram_size - 1;
-	signal addressY_reg  : integer range 0 to ram_size - 1;
-	signal addressX_reg2 : integer range 0 to ram_size - 1;
-	signal addressY_reg2 : integer range 0 to ram_size - 1;
+	signal addressX_reg                                                              : integer range 0 to ram_size - 1;
+	signal addressY_reg                                                              : integer range 0 to ram_size - 1;
+	signal addressX_reg2, addressX_reg3, addressX_reg4, addressX_reg5, addressX_reg6 : integer range 0 to ram_size - 1; -- 3 to 6 due to RAM pipeline
+	signal addressY_reg2, addressY_reg3, addressY_reg4, addressY_reg5, addressY_reg6 : integer range 0 to ram_size - 1;
 
 	------------------------------------
 	--      For OR-ing crossbar       --
@@ -213,13 +213,13 @@ begin
 				clk   => clk,
 				rst   => rst,
 				ena   => ena,
-				enb   => ena,               --enb,
+				enb   => ena,           --enb,
 				addra => depth_addr_added,
 				addrb => depth_addr_arr(i), --addrb,
 				wea   => wea_int(i),
-				web   => '0',               --web,
+				web   => '0',           --web,
 				dia   => muxData,
-				dib   => (others => '0'),    --dib,
+				dib   => (others => '0'), --dib,
 				doa   => open,
 				dob   => doa_int(i)
 			);
@@ -288,10 +288,10 @@ begin
 		for x in -size/2 to size/2 loop
 			for y in -size/2 to size/2 loop
 
-				if addressX_reg2 + x < 0 or addressX_reg2 + x >= ram_size or addressY_reg2 + y < 0 or addressY_reg2 + y >= ram_size then
+				if addressX_reg6 + x < 0 or addressX_reg6 + x >= ram_size or addressY_reg6 + y < 0 or addressY_reg6 + y >= ram_size then
 					doa((x + 2) + (y + 2)*size) <= (others => '0');
 				else
-					doa((x + 2) + (y + 2)*size) <= doa_int(blocknr_arr_reg((x + 2) + (y + 2)*size));
+					doa((x + 2) + (y + 2)*size) <= doa_int(blocknr_arr_reg5((x + 2) + (y + 2)*size));
 				end if;
 			end loop;
 		end loop;
@@ -320,7 +320,6 @@ begin
 
 	process(clk, rst) is
 	begin
-		
 		if rising_edge(clk) then
 			if rst = '1' then
 				ready2       <= '1';
@@ -334,22 +333,47 @@ begin
 				addressX_reg  <= 0;
 				addressY_reg  <= 0;
 				addressX_reg2 <= 0;
+				addressX_reg3 <= 0;
+				addressX_reg4 <= 0;
+				addressX_reg5 <= 0;
+				addressX_reg6 <= 0;
 				addressY_reg2 <= 0;
+				addressY_reg3 <= 0;
+				addressY_reg4 <= 0;
+				addressY_reg5 <= 0;
+				addressY_reg6 <= 0;
 
-				blocknr_arr_reg <= (others => 0);
-				blocknr_reg     <= 0;
+				blocknr_arr_reg  <= (others => 0);
+				blocknr_arr_reg2 <= (others => 0);
+				blocknr_arr_reg3 <= (others => 0);
+				blocknr_arr_reg4 <= (others => 0);
+				blocknr_arr_reg5 <= (others => 0);
+				blocknr_reg      <= 0;
 
 				depthb_reg     <= 0;
 				depth_addr_reg <= 0;
 
 				wea_reg <= '0';
 			else
-				ready2          <= ready;
-				addressX_reg    <= addressXb;
-				addressY_reg    <= addressYb;
-				addressX_reg2   <= addressX_reg;
-				addressY_reg2   <= addressY_reg;
-				blocknr_arr_reg <= blocknr_arr;
+				ready2        <= ready;
+				addressX_reg  <= addressXb;
+				addressY_reg  <= addressYb;
+				addressX_reg2 <= addressX_reg;
+				addressX_reg3 <= addressX_reg2;
+				addressX_reg4 <= addressX_reg3;
+				addressX_reg5 <= addressX_reg4;
+				addressX_reg6 <= addressX_reg5;
+				addressY_reg2 <= addressY_reg;
+				addressY_reg3 <= addressY_reg2;
+				addressY_reg4 <= addressY_reg3;
+				addressY_reg5 <= addressY_reg4;
+				addressY_reg6 <= addressY_reg5;
+
+				blocknr_arr_reg  <= blocknr_arr;
+				blocknr_arr_reg2 <= blocknr_arr_reg;
+				blocknr_arr_reg3 <= blocknr_arr_reg2;
+				blocknr_arr_reg4 <= blocknr_arr_reg3;
+				blocknr_arr_reg5 <= blocknr_arr_reg4;
 
 				depthb_reg <= depthb;
 

@@ -46,10 +46,11 @@ architecture RTL of topFSM is
 	--             type and signal declarations             --
 	----------------------------------------------------------	
 
-	type state_type is (idle, runLayer, innerDoneState, allDone);
+	type state_type is (idle, runLayer, innerDoneState, allDone, pipelineStall);
 
-	signal state, state_next : state_type;
-	signal layer, layerNext  : unsigned(layerCounterWidth - 1 downto 0);
+	signal state, state_next              : state_type;
+	signal layer, layerNext               : unsigned(layerCounterWidth - 1 downto 0);
+	signal stallCounter, stallCounterNext : integer range 0 to 10;
 
 begin
 
@@ -66,11 +67,12 @@ begin
 
 	process(all)
 	begin
-		layerNext    <= layer;
-		state_next   <= state;
-		innerstart   <= '0';
-		innerDoneAck <= '0';
-		doneLED      <= '0';
+		layerNext        <= layer;
+		state_next       <= state;
+		innerstart       <= '0';
+		innerDoneAck     <= '0';
+		doneLED          <= '0';
+		stallCounterNext <= stallCounter;
 		case state is
 			when idle =>
 				layerNext <= "00";
@@ -86,7 +88,7 @@ begin
 					if layer = nrOfLayers - 1 then
 						state_next <= allDone;
 					else
-						state_next <= innerDoneState;
+						state_next <= pipelineStall;
 					end if;
 				end if;
 
@@ -96,6 +98,14 @@ begin
 					state_next <= allDone;
 				else
 					state_next <= idle;
+				end if;
+
+			when pipelineStall =>
+				stallCounterNext <= stallCounter + 1;
+
+				if stallCounter = 10 then
+					state_next       <= innerDoneState;
+					stallCounterNext <= 0;
 				end if;
 
 			when innerDoneState =>
@@ -112,14 +122,15 @@ begin
 
 	process(clk, rst)
 	begin
-		
 		if rising_edge(clk) then
 			if rst = '1' then
-				state <= idle;
-				layer <= (others => '0');
+				state        <= idle;
+				layer        <= (others => '0');
+				stallCounter <= 0;
 			else
-				state <= state_next;
-				layer <= layerNext;
+				state        <= state_next;
+				layer        <= layerNext;
+				stallCounter <= stallCounterNext;
 			end if;
 		end if;
 	end process;
