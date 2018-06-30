@@ -24,6 +24,8 @@ mnist_hardware/testTopRam
 mnist_hardware/testtopram2
 mnist_hardware/testTranslator
 mnist_hardware/FullSystemV2
+HardwareAndSoftware
+Report
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
