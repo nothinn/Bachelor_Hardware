@@ -361,7 +361,7 @@ begin
 		generic map(
 			depth_size => LayerInputDepth(1),
 			size       => 5,
-			ram_size   => LayerWidthHeight(1),
+			ram_size   => LayerWidthHeight(1)
 		)
 		port map(
 			clk      => clk,
