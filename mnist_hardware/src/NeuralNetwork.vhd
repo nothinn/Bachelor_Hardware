@@ -23,7 +23,6 @@ end entity;
 
 architecture rtl of NeuralNetwork is
 
-
 	component MACFullFilter is
 		generic(
 			filter_offset : unsigned(natural(log2(real(nrOfInputs))) - 1 downto 0) := (others => '0')
@@ -196,9 +195,9 @@ architecture rtl of NeuralNetwork is
 
 	signal filter : unsigned(5 downto 0);
 
-	signal addressX, addressX_reg, addressXOut, addressXOut_reg, addressXOut_reg1, addressXOut_reg2 : integer := 0;
-	signal addressY, addressY_reg, addressYOut, addressYOut_reg, addressYOut_reg1, addressYOut_reg2 : integer := 0;
-	signal addressZ, addressZ_reg                                                                   : integer; -- range 0 to 31;
+	signal addressX, addressX_reg, addressXOut, addressXOut_reg, addressXOut_reg1, addressXOut_reg2, addressXOut_reg3, addressXOut_reg4, addressXOut_reg5, addressXOut_reg6, addressXOut_reg7, addressXOut_reg8, addressXOut_reg9 : integer := 0;
+	signal addressY, addressY_reg, addressYOut, addressYOut_reg, addressYOut_reg1, addressYOut_reg2, addressYOut_reg3, addressYOut_reg4, addressYOut_reg5, addressYOut_reg6, addressYOut_reg7, addressYOut_reg8, addressYOut_reg9 : integer := 0;
+	signal addressZ, addressZ_reg                                                                                                                                                                                                 : integer; -- range 0 to 31;
 
 	signal hold, newCalc, done, calcMax, newMax : std_logic;
 	signal maxCounterOut                        : unsigned(1 downto 0);
@@ -228,16 +227,15 @@ architecture rtl of NeuralNetwork is
 	signal layerCount      : unsigned(layerCounterWidth - 1 downto 0);
 	signal innerDoneAck    : std_logic;
 
-	signal depth_reg                       : unsigned(6 downto 0);
-	signal depthWFC_reg                    : unsigned(8 downto 0);
-	signal innerConvFC_reg                 : std_logic;
-	signal filter_input_reg                : filter_array;
-	signal layercount_reg, layercount_reg2 : unsigned(layerCounterWidth - 1 downto 0);
-	signal hold_reg                        : std_logic;
-	signal newCalc_reg                     : std_logic;
-
-	signal newMax_reg  : std_logic;
-	signal calcMax_reg : std_logic;
+	signal depth_reg, depth_reg2, depth_reg3, depth_reg4, depth_reg5                                                                                                       : unsigned(6 downto 0);
+	signal depthWFC_reg, depthWFC_reg2, depthWFC_reg3, depthWFC_reg4, depthWFC_reg5                                                                                        : unsigned(8 downto 0);
+	signal innerConvFC_reg, innerConvFC_reg2, innerConvFC_reg3, innerConvFC_reg4, innerConvFC_reg5, innerConvFC_reg6, innerConvFC_reg7, innerConvFC_reg8, innerConvFC_reg9 : std_logic;
+	signal filter_input_reg, filter_input_reg2, filter_input_reg3, filter_input_reg4, filter_input_reg5                                                                    : filter_array;
+	signal layercount_reg, layercount_reg2, layercount_reg3, layercount_reg4, layercount_reg5                                                                              : unsigned(layerCounterWidth - 1 downto 0);
+	signal hold_reg, hold_reg2, hold_reg3, hold_reg4, hold_reg5                                                                                                            : std_logic;
+	signal newCalc_reg, newCalc_reg2, newCalc_reg3, newCalc_reg4, newCalc_reg5                                                                                             : std_logic;
+	signal newMax_reg, newMax_reg2, newMax_reg3, newMax_reg4, newMax_reg5, newMax_reg6, newMax_reg7, newMax_reg8, newMax_reg9                                              : std_logic;
+	signal calcMax_reg, calcMax_reg2, calcMax_reg3, calcMax_reg4, calcMax_reg5, calcMax_reg6, calcMax_reg7, calcMax_reg8, calcMax_reg9                                     : std_logic;
 
 	--Signals for ram
 	signal ram_ena : std_logic_vector(1 downto 0);
@@ -275,12 +273,12 @@ architecture rtl of NeuralNetwork is
 	signal uartToMem_AddrZ      : integer range 0 to layerInputDepth(0) - 1;
 	signal uartToMem_DataWrite  : ram_input(0 downto 0);
 
-	signal we_ram_reg                : std_logic;
-	signal resultReg, resultReg_next : ResultArray;
+	signal we_ram_reg, we_ram_reg2, we_ram_reg3, we_ram_reg4, we_ram_reg5, we_ram_reg6, we_ram_reg7, we_ram_reg8, we_ram_reg9 : std_logic;
+	signal resultReg, resultReg_next                                                                                          : ResultArray;
 
 	Signal clk : std_logic;
 
-	signal filter_reg2 : integer;
+	signal filter_reg2, filter_reg3, filter_reg4, filter_reg5, filter_reg6, filter_reg7, filter_reg8, filter_reg9, filter_reg10 : integer;
 
 	signal value : std_logic_vector(15 downto 0);
 	--signal segment : std_logic_vector(6 downto 0);
@@ -398,29 +396,14 @@ begin
 			ready     => open
 		);
 
-	/*  
-    --This is to be subsituted with ram when ready.
-    gen_romX : for x in -2 to 2 generate
-        gen_romY : for y in -2 to 2 generate
-            FirstRom_inst : FirstRom
-                port map( --Reg to match ram
-                    clk      => clk,
-                    addressX => (addressX_reg + x),
-                    addressY => (addressY_reg + y),
-                    addressZ => addressZ_reg,
-                    output   => ram_data_out_first((x + 2) + (y + 2)*5)
-                );
-        end generate;
-    end generate;
-    */
 	----------------------------------------------------------------------------
 	--        Multiplexer for handling the three ram blocks                   --
 	----------------------------------------------------------------------------   
 	muxProcess : process(all) is
 	begin
-		if layerCount = 0 then          -- to_unsigned(0,layerCount'length) then
+		if layercount_reg4 = 0 then     -- to_unsigned(0,layerCount'length) then
 			input_mac <= ram_data_out_first;
-		elsif layerCount(0) = '0' then
+		elsif layerCount_reg4(0) = '0' then
 			input_mac <= ram_data_out0;
 		else
 			input_mac <= ram_data_out1;
@@ -435,24 +418,24 @@ begin
 			ram_addressY0 <= addressY;
 			ram_depth0    <= addressZ;
 
-			ram_addressX1 <= addressXOut_reg1;
-			ram_addressY1 <= addressYOut_reg1;
-			ram_depth1    <= filter_reg2;
+			ram_addressX1 <= addressXOut_reg9;
+			ram_addressY1 <= addressYOut_reg9;
+			ram_depth1    <= filter_reg10;
 
 			ram_wea(0) <= '0';
-			ram_wea(1) <= '1' and we_ram_reg;
+			ram_wea(1) <= '1' and we_ram_reg9;
 
 		else
 			ram_addressX1 <= addressX;
 			ram_addressY1 <= addressY;
 			ram_depth1    <= addressZ;
 
-			ram_addressX0 <= addressXOut_reg1;
-			ram_addressY0 <= addressYOut_reg1;
-			ram_depth0    <= filter_reg2;
+			ram_addressX0 <= addressXOut_reg9;
+			ram_addressY0 <= addressYOut_reg9;
+			ram_depth0    <= filter_reg10;
 
 			ram_wea(1) <= '0';
-			ram_wea(0) <= '1' and we_ram_reg;
+			ram_wea(0) <= '1' and we_ram_reg9;
 		end if;
 	end process;
 
@@ -467,14 +450,14 @@ begin
 			port map(
 				clk      => clk,
 				rst      => rst,
-				depth    => depth_reg,
-				depthFC  => depthWFC_reg,
-				convOrFC => innerConvFC_reg,
-				Filter   => filter_input_reg(i),
-				layer    => to_integer(layercount_reg),
+				depth    => depth_reg5,
+				depthFC  => depthWFC_reg5,
+				convOrFC => innerConvFC_reg5,
+				Filter   => filter_input_reg5(i),
+				layer    => to_integer(layercount_reg5),
 				input    => input_mac,
-				hold     => hold_reg,
-				newCalc  => newCalc_reg,
+				hold     => hold_reg5,
+				newCalc  => newCalc_reg5,
 				result   => MAC_array(i)
 			);
 	end generate;
@@ -537,8 +520,8 @@ begin
 				clk        => clk,
 				rst        => rst,
 				convResult => MAC_array(I),
-				newMax     => newMax_reg,
-				calcMax    => calcMax_reg,
+				newMax     => newMax_reg9,
+				calcMax    => calcMax_reg9,
 				MaxResult  => MAX_array(I)
 			);
 
@@ -595,11 +578,11 @@ begin
 			resultreg_next(I) <= resultReg(I);
 		end loop;
 
-		if (we_ram_reg = '1') and (innerConvFC_reg = '1') then
+		if (we_ram_reg9 = '1') and (innerConvFC_reg9 = '1') then
 
 			for I in 0 to NrOfInputs - 1 loop
-				if (filter_reg2 + I < layerTotFilters(nrOfLayers - 1)) then
-					resultreg_next(I + filter_reg2) <= ram_data_in(I);
+				if (filter_reg10 + I < layerTotFilters(nrOfLayers - 1)) then
+					resultreg_next(I + filter_reg10) <= ram_data_in(I);
 				end if;
 			end loop;
 
@@ -636,84 +619,236 @@ begin
 
 	process(clk, maxCounterOut(0 downto 0), maxCounterOut(1 downto 1), rst)
 	begin
-		
-
 		if rising_edge(clk) then
 			if rst = '1' then
 				writeEnableReg <= '0';
 				we_ram         <= '0';
 
 				addressX_reg <= 0;
-				--addressX_reg2 <= 0;
-
 				addressY_reg <= 0;
-				--addressY_reg2 <= 0;
-
 				addressZ_reg <= 0;
 
-				filter_reg  <= 0;
-				filter_reg1 <= 0;
-				filter_reg2 <= 0;
+				addressXOut_reg  <= 0;
+				addressXOut_reg1 <= 0;
+				addressXOut_reg2 <= 0;
+				addressXOut_reg3 <= 0;
+				addressXOut_reg4 <= 0;
+				addressXOut_reg5 <= 0;
+				addressXOut_reg6 <= 0;
+				addressXOut_reg7 <= 0;
+				addressXOut_reg8 <= 0;
+				addressXOut_reg9 <= 0;
 
-				--maxCounterOutx <= maxCounterOut(0 downto 0);
-				--maxCounterOuty <= maxCounterOut(1 downto 1);
+				addressYOut_reg  <= 0;
+				addressYOut_reg1 <= 0;
+				addressYOut_reg2 <= 0;
+				addressYOut_reg3 <= 0;
+				addressYOut_reg4 <= 0;
+				addressYOut_reg5 <= 0;
+				addressYOut_reg6 <= 0;
+				addressYOut_reg7 <= 0;
+				addressYOut_reg8 <= 0;
+				addressYOut_reg9 <= 0;
 
-				depth_reg        <= (others => '0');
-				depthWFC_reg     <= (others => '0');
-				innerConvFC_reg  <= '0';
-				filter_input_reg <= (others => (others => '0'));
-				layercount_reg   <= (others => '0');
-				layercount_reg2  <= (others => '0');
+				filter_reg   <= 0;
+				filter_reg1  <= 0;
+				filter_reg2  <= 0;
+				filter_reg3  <= 0;
+				filter_reg4  <= 0;
+				filter_reg5  <= 0;
+				filter_reg6  <= 0;
+				filter_reg7  <= 0;
+				filter_reg8  <= 0;
+				filter_reg9  <= 0;
+				filter_reg10 <= 0;
 
-				hold_reg    <= '0';
-				newCalc_reg <= '0';
+				depth_reg         <= (others => '0');
+				depth_reg2        <= (others => '0');
+				depth_reg3        <= (others => '0');
+				depth_reg4        <= (others => '0');
+				depth_reg5        <= (others => '0');
+				depthWFC_reg      <= (others => '0');
+				depthWFC_reg2     <= (others => '0');
+				depthWFC_reg3     <= (others => '0');
+				depthWFC_reg4     <= (others => '0');
+				depthWFC_reg5     <= (others => '0');
+				innerConvFC_reg   <= '0';
+				innerConvFC_reg2  <= '0';
+				innerConvFC_reg3  <= '0';
+				innerConvFC_reg4  <= '0';
+				innerConvFC_reg5  <= '0';
+				innerConvFC_reg6  <= '0';
+				innerConvFC_reg7  <= '0';
+				innerConvFC_reg8  <= '0';
+				innerConvFC_reg9  <= '0';
+				filter_input_reg  <= (others => (others => '0'));
+				filter_input_reg2 <= (others => (others => '0'));
+				filter_input_reg3 <= (others => (others => '0'));
+				filter_input_reg4 <= (others => (others => '0'));
+				filter_input_reg5 <= (others => (others => '0'));
+				layercount_reg    <= (others => '0');
+				layercount_reg2   <= (others => '0');
+				layercount_reg3   <= (others => '0');
+				layercount_reg4   <= (others => '0');
+				layercount_reg5   <= (others => '0');
 
-				newMax_reg  <= '0';
-				calcMax_reg <= '0';
+				hold_reg     <= '0';
+				hold_reg2    <= '0';
+				hold_reg3    <= '0';
+				hold_reg4    <= '0';
+				hold_reg5    <= '0';
+				newCalc_reg  <= '0';
+				newCalc_reg2 <= '0';
+				newCalc_reg3 <= '0';
+				newCalc_reg4 <= '0';
+				newCalc_reg5 <= '0';
 
-				we_ram_reg <= '0';
+				newMax_reg   <= '0';
+				newMax_reg2  <= '0';
+				newMax_reg3  <= '0';
+				newMax_reg4  <= '0';
+				newMax_reg5  <= '0';
+				newMax_reg6  <= '0';
+				newMax_reg7  <= '0';
+				newMax_reg8  <= '0';
+				newMax_reg9  <= '0';
+				calcMax_reg  <= '0';
+				calcMax_reg2 <= '0';
+				calcMax_reg3 <= '0';
+				calcMax_reg4 <= '0';
+				calcMax_reg5 <= '0';
+				calcMax_reg6 <= '0';
+				calcMax_reg7 <= '0';
+				calcMax_reg8 <= '0';
+				calcMax_reg9 <= '0';
+
+				we_ram_reg  <= '0';
+				we_ram_reg2 <= '0';
+				we_ram_reg3 <= '0';
+				we_ram_reg4 <= '0';
+				we_ram_reg5 <= '0';
+				we_ram_reg6 <= '0';
+				we_ram_reg7 <= '0';
+				we_ram_reg8 <= '0';
+				we_ram_reg9 <= '0';
 
 				for I in 0 to 9 loop
 					resultReg(I) <= (others => '0');
 				end loop;
+
 			else
 
 				writeEnableReg <= writeEnable;
 				we_ram         <= writeEnableReg;
 
-				we_ram_reg <= we_ram;
+				we_ram_reg  <= we_ram;
+				we_ram_reg2 <= we_ram_reg;
+				we_ram_reg3 <= we_ram_reg2;
+				we_ram_reg4 <= we_ram_reg3;
+				we_ram_reg5 <= we_ram_reg4;
+				we_ram_reg6 <= we_ram_reg5;
+				we_ram_reg7 <= we_ram_reg6;
+				we_ram_reg8 <= we_ram_reg7;
+				we_ram_reg9 <= we_ram_reg8;
 
 				addressX_reg <= addressX;
-				--addressX_reg2 <= addressX_reg;
 
 				addressY_reg <= addressY;
-				--addressY_reg2 <= addressY_reg;
 
 				addressZ_reg     <= addressZ;
 				addressXOut_reg  <= addressXOut;
 				addressXOut_reg1 <= addressXOut_reg;
+				addressXOut_reg2 <= addressXOut_reg1;
+				addressXOut_reg3 <= addressXOut_reg2;
+				addressXOut_reg4 <= addressXOut_reg3;
+				addressXOut_reg5 <= addressXOut_reg4;
+				addressXOut_reg6 <= addressXOut_reg5;
+				addressXOut_reg7 <= addressXOut_reg6;
+				addressXOut_reg8 <= addressXOut_reg7;
+				addressXOut_reg9 <= addressXOut_reg8;
 
 				addressYOut_reg  <= addressYOut;
 				addressYOut_reg1 <= addressYOut_reg;
+				addressYOut_reg2 <= addressYOut_reg1;
+				addressYOut_reg3 <= addressYOut_reg2;
+				addressYOut_reg4 <= addressYOut_reg3;
+				addressYOut_reg5 <= addressYOut_reg4;
+				addressYOut_reg6 <= addressYOut_reg5;
+				addressYOut_reg7 <= addressYOut_reg6;
+				addressYOut_reg8 <= addressYOut_reg7;
+				addressYOut_reg9 <= addressYOut_reg8;
 
-				filter_reg  <= pre_filter;
-				filter_Reg1 <= filter_reg;
-				filter_reg2 <= filter_reg1;
-				--maxCounterOutx <= maxCounterOut(0 downto 0);
-				--maxCounterOuty <= maxCounterOut(1 downto 1);
+				filter_reg   <= pre_filter;
+				filter_Reg1  <= filter_reg;
+				filter_reg2  <= filter_reg1;
+				filter_reg3  <= filter_reg2;
+				filter_reg4  <= filter_reg3;
+				filter_reg5  <= filter_reg4;
+				filter_reg6  <= filter_reg5;
+				filter_reg7  <= filter_reg6;
+				filter_reg8  <= filter_reg7;
+				filter_reg9  <= filter_reg8;
+				filter_reg10 <= filter_reg9;
 
-				depth_reg        <= depth;
-				depthWFC_reg     <= depthWFC;
-				innerConvFC_reg  <= innerconvFC;
-				filter_input_reg <= filter_input;
-				layercount_reg   <= layercount;
-				layercount_reg2  <= layercount_reg;
+				depth_reg         <= depth;
+				depth_reg2        <= depth_reg;
+				depth_reg3        <= depth_reg2;
+				depth_reg4        <= depth_reg3;
+				depth_reg5        <= depth_reg4;
+				depthWFC_reg      <= depthWFC;
+				depthWFC_reg2     <= depthWFC_reg;
+				depthWFC_reg3     <= depthWFC_reg2;
+				depthWFC_reg4     <= depthWFC_reg3;
+				depthWFC_reg5     <= depthWFC_reg4;
+				innerConvFC_reg   <= innerconvFC;
+				innerConvFC_reg2  <= innerconvFC_reg;
+				innerConvFC_reg3  <= innerconvFC_reg2;
+				innerConvFC_reg4  <= innerconvFC_reg3;
+				innerConvFC_reg5  <= innerconvFC_reg4;
+				innerConvFC_reg6  <= innerconvFC_reg5;
+				innerConvFC_reg7  <= innerconvFC_reg6;
+				innerConvFC_reg8  <= innerconvFC_reg7;
+				innerConvFC_reg9  <= innerconvFC_reg8;
+				filter_input_reg  <= filter_input;
+				filter_input_reg2 <= filter_input_reg;
+				filter_input_reg3 <= filter_input_reg2;
+				filter_input_reg4 <= filter_input_reg3;
+				filter_input_reg5 <= filter_input_reg4;
+				layercount_reg    <= layercount;
+				layercount_reg2   <= layercount_reg;
+				layercount_reg3   <= layercount_reg2;
+				layercount_reg4   <= layercount_reg3;
+				layercount_reg5   <= layercount_reg4;
 
-				hold_reg    <= hold;
-				newCalc_reg <= newCalc;
+				hold_reg     <= hold;
+				hold_reg2    <= hold_reg;
+				hold_reg3    <= hold_reg2;
+				hold_reg4    <= hold_reg3;
+				hold_reg5    <= hold_reg4;
+				newCalc_reg  <= newCalc;
+				newCalc_reg2 <= newCalc_reg;
+				newCalc_reg3 <= newCalc_reg2;
+				newCalc_reg4 <= newCalc_reg3;
+				newCalc_reg5 <= newCalc_reg4;
 
-				newMax_reg  <= newMax;
-				calcMax_reg <= calcMax;
+				newMax_reg   <= newMax;
+				newMax_reg2  <= newMax_reg;
+				newMax_reg3  <= newMax_reg2;
+				newMax_reg4  <= newMax_reg3;
+				newMax_reg5  <= newMax_reg4;
+				newMax_reg6  <= newMax_reg5;
+				newMax_reg7  <= newMax_reg6;
+				newMax_reg8  <= newMax_reg7;
+				newMax_reg9  <= newMax_reg8;
+				calcMax_reg  <= calcMax;
+				calcMax_reg2 <= calcMax_reg;
+				calcMax_reg3 <= calcMax_reg2;
+				calcMax_reg4 <= calcMax_reg3;
+				calcMax_reg5 <= calcMax_reg4;
+				calcMax_reg6 <= calcMax_reg5;
+				calcMax_reg7 <= calcMax_reg6;
+				calcMax_reg8 <= calcMax_reg7;
+				calcMax_reg9 <= calcMax_reg8;
 
 				for I in 0 to 9 loop
 					resultReg(I) <= resultReg_next(I);

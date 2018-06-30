@@ -28,36 +28,80 @@ end entity;
 architecture rtl of ram is
 
 	signal RAM : mem_block((depth * integer((Ceil(real(width)/real(filter_width)))) **2 - 1) downto 0);
-
+	
+	signal doareg0, doareg1, doareg2 : MAC_result;
+    signal dobreg0, dobreg1, dobreg2 : MAC_result;
+    signal enareg1, enareg2 : std_logic;
+    signal enbreg1, enbreg2 : std_logic;
+    signal addrareg1, addrareg2 : integer;
+    signal addrbreg1, addrbreg2 : integer;
+    signal weareg1, weareg2 : std_logic;
+    signal webreg1, webreg2 : std_logic;
+    signal diareg1, diareg2 : MAC_result;
+    signal dibreg1, dibreg2 : MAC_result;
 begin
-	process(clk, rst)
+	doa <= doareg2;
+    dob <= dobreg2;
+    
+	process(clk)
 	begin
 		
 		if rising_edge(clk) then
 			if rst = '1' then
-				dob <= (others => '0');
+				doareg1 <= (others => '0');
+				doareg2 <= (others => '0');
+                dobreg1 <= (others => '0');
+                dobreg2 <= (others => '0');
+                enareg1 <= '0';
+                enareg2 <= '0';
+                enbreg1 <= '0';
+                enbreg2 <= '0';
+                addrareg1 <= 0;
+                addrareg2 <= 0;
+                addrbreg1 <= 0;
+                addrbreg2 <= 0;
+                weareg1 <= '0';
+                weareg2 <= '0';
+                webreg1 <= '0';
+                webreg2 <= '0';
+                diareg1 <= (others => '0');
+                diareg2 <= (others => '0');
+                dibreg1 <= (others => '0');
+                dibreg2 <= (others => '0');
 			else
-				if ena = '1' then
-					--doa <= ram(addra mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 ));
-					if wea = '1' then
-						ram(addra) <= dia;
+                doareg1 <= doareg0;
+                doareg2 <= doareg1;
+                dobreg1 <= dobreg0;
+                dobreg2 <= dobreg1;
+                enareg1 <= ena;
+                enareg2 <= enareg1;
+                enbreg1 <= enb;
+                enbreg2 <= enbreg1;
+                addrareg1 <= addra;
+                addrareg2 <= addrareg1;
+                addrbreg1 <= addrb;
+                addrbreg2 <= addrbreg1;
+                weareg1 <= wea;
+                weareg2 <= weareg1;
+                webreg1 <= web;
+                webreg2 <= webreg1;
+                diareg1 <= dia;
+                diareg2 <= diareg1;
+                dibreg1 <= dib;
+                dibreg2 <= dibreg1;                			    
+				if enareg2 = '1' then
+					if weareg2 = '1' then
+						ram(addrareg2) <= diareg2;
 					end if;
 				end if;
 
-				if enb = '1' then
-					dob <= RAM(addrb);      --mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 ));
-					if web = '1' then
-						--ram(addrb) <= dib;
+				if enbreg2 = '1' then
+					dobreg0 <= RAM(addrbreg2);      --mod (depth * integer((Ceil(real(width)/real(filter_width)))) **2 )); -- old approach
+					if webreg2 = '1' then
 					end if;
 				end if;
 			end if;
 		end if;
 	end process;
 
-	process(clk)
-	begin
-		if rising_edge(clk) then
-
-		end if;
-	end process;
 end architecture;

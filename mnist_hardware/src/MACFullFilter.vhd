@@ -32,22 +32,23 @@ entity MACFullFilter is
 end entity MACFullFilter;
 
 architecture RTL of MACFullFilter is
-	signal layerResReg, nextLayerResReg : signedNeuron;
+	
+	signal layerResReg, nextLayerResReg                                                             : signedNeuron;
+	signal inputs                                                                                   : MAC_inputs;
+	signal weights                                                                                  : MAC_weights;
+	signal macRes                                                                                   : MAC_output;
+	signal AddSatCheck, newCalcMux, holdMux                                                         : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 1 + 5 + 1 - 1) downto 0);
+	signal concatRight                                                                              : signed(fixWeightright + inferredWeightBits + 1 - 1 downto 0);
+	signal concatLeft                                                                               : signed((fixWeightleft - 1) + 5 - 1 downto 0);
+	signal newcalc_reg, newcalc_reg0, newcalc_reg2, newcalc_reg3, newcalc_reg4, newcalc_reg5        : std_logic;
+	signal hold_reg, hold_reg0, hold_reg2, hold_reg3, hold_reg4, hold_reg5                          : std_logic;
+	signal bias                                                                                     : signedNeuron;
+	signal addBiasOut                                                                               : signedNeuron;
+	signal ROMDepth                                                                                 : unsigned(8 downto 0);
+	signal biasOut                                                                                  : signed(7 downto 0);
+	signal filter_reg, filter_reg1, filter_reg2, filter_reg3, filter_reg4, filter_reg5, filter_reg6 : unsigned(5 downto 0); -- 3 to 6 due to MAC pipeline
+	signal layer_reg, layer_reg2, layer_reg3, layer_reg4                                            : integer range 0 to NrOfLayers - 1; --due to mac pipeline
 
-	signal inputs                              : MAC_inputs;
-	signal weights                             : MAC_weights;
-	signal macRes                              : MAC_output;
-	signal AddSatCheck, newCalcMux, holdMux    : signed((fixWeightleft + fixWeightright + fixInputleft + fixInputright + inferredWeightBits + 1 + 5 + 1 - 1) downto 0);
-	signal concatRight                         : signed(fixWeightright + inferredWeightBits + 1 - 1 downto 0);
-	signal concatLeft                          : signed((fixWeightleft - 1) + 5 - 1 downto 0);
-	signal newcalc_reg, newcalc_reg0, hold_reg : std_logic;
-	signal bias                                : signedNeuron;
-	signal addBiasOut                          : signedNeuron;
-	signal ROMDepth                            : unsigned(8 downto 0);
-
-	signal biasOut : signed(7 downto 0);
-
-	signal filter_reg, filter_reg1, filter_reg2 : unsigned(5 downto 0);
 
 	component MAC
 		port(
@@ -100,8 +101,8 @@ begin
 		port map(
 			clk    => clk,
 			rst    => rst,
-			layer  => layer,
-			filter => to_integer(filter_reg2),
+			layer  => layer_reg4,
+			filter => to_integer(filter_reg6),
 			output => biasout
 		);
 
@@ -134,7 +135,7 @@ begin
 		concatLeft  <= (others => '0');
 		concatRight <= (others => '0');
 		--bias					<= (others => '0'); --temperary value
-		case hold_reg is
+		case hold_reg5 is
 			when '1' =>
 				holdMux <= (others => '0');
 			when others =>
@@ -152,7 +153,7 @@ begin
 				bias <= "000000000" & biasOut;
 		end case;
 
-		case newCalc_reg is
+		case newCalc_reg5 is
 			when '1' =>
 				newCalcMux <= (others => '0');
 			when others =>
@@ -199,28 +200,61 @@ begin
 
 	end process makeMuxLogic;
 
-	name : process(clk, rst) is
+	registers : process(clk, rst) is
 	begin
-		
 		if rising_edge(clk) then
 			if rst = '1' then
 				layerResReg  <= X"0000" & "0";
 				newcalc_reg0 <= '0';
 				newcalc_reg  <= '0';
+				newcalc_reg2 <= '0';
+				newcalc_reg3 <= '0';
+				newcalc_reg4 <= '0';
+				newcalc_reg5 <= '0';
+				hold_reg0    <= '0';
 				hold_reg     <= '0';
+				hold_reg2    <= '0';
+				hold_reg3    <= '0';
+				hold_reg4    <= '0';
+				hold_reg5    <= '0';
 				filter_reg   <= (others => '0');
 				filter_reg1  <= (others => '0');
 				filter_reg2  <= (others => '0');
+				filter_reg3  <= (others => '0');
+				filter_reg4  <= (others => '0');
+				filter_reg5  <= (others => '0');
+				filter_reg6  <= (others => '0');
+				layer_reg    <= 0;
+				layer_reg2   <= 0;
+				layer_reg3   <= 0;
+				layer_reg4   <= 0;
 			else
 				layerResReg  <= nextLayerResReg;
 				newcalc_reg0 <= newcalc;
 				newcalc_reg  <= newcalc_reg0;
-				hold_reg     <= hold;
+				newcalc_reg2 <= newcalc_reg;
+				newcalc_reg3 <= newcalc_reg2;
+				newcalc_reg4 <= newcalc_reg3;
+				newcalc_reg5 <= newcalc_reg4;
+				hold_reg0    <= hold;
+				hold_reg     <= hold_reg0;
+				hold_reg2    <= hold_reg;
+				hold_reg3    <= hold_reg2;
+				hold_reg4    <= hold_reg3;
+				hold_reg5    <= hold_reg4;
 				filter_reg   <= filter;
 				filter_reg1  <= filter_reg;
 				filter_reg2  <= filter_reg1;
+				filter_reg3  <= filter_reg2;
+				filter_reg4  <= filter_reg3;
+				filter_reg5  <= filter_reg4;
+				filter_reg6  <= filter_reg5;
+				layer_reg    <= layer;
+				layer_reg2   <= layer_reg;
+				layer_reg3   <= layer_reg2;
+				layer_reg4   <= layer_reg3;
 			end if;
 		end if;
-	end process name;
+	end process registers;
 
 end architecture RTL;
