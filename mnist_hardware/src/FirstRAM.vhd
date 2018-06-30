@@ -25,7 +25,7 @@ entity topFirstRam is
 		depthb    : in  integer range 0 to depth_size - 1;
 		addressXb : in  integer range 0 to ram_size - 1;
 		addressYb : in  integer range 0 to ram_size - 1;
-		dia       : in  ram_input(NrOfINputs - 1 downto 0);
+		dia       : in  ram_input(0 downto 0);
 		doa       : out MAC_inputs;
 		ready     : out std_logic
 	);
