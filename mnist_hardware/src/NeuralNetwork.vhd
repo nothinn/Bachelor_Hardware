@@ -636,87 +636,89 @@ begin
 
 	process(clk, maxCounterOut(0 downto 0), maxCounterOut(1 downto 1), rst)
 	begin
-		if rst = '1' then
-			writeEnableReg <= '0';
-			we_ram         <= '0';
+		
 
-			addressX_reg <= 0;
-			--addressX_reg2 <= 0;
+		if rising_edge(clk) then
+			if rst = '1' then
+				writeEnableReg <= '0';
+				we_ram         <= '0';
 
-			addressY_reg <= 0;
-			--addressY_reg2 <= 0;
+				addressX_reg <= 0;
+				--addressX_reg2 <= 0;
 
-			addressZ_reg <= 0;
+				addressY_reg <= 0;
+				--addressY_reg2 <= 0;
 
-			filter_reg  <= 0;
-			filter_reg1 <= 0;
-			filter_reg2 <= 0;
+				addressZ_reg <= 0;
 
-			--maxCounterOutx <= maxCounterOut(0 downto 0);
-			--maxCounterOuty <= maxCounterOut(1 downto 1);
+				filter_reg  <= 0;
+				filter_reg1 <= 0;
+				filter_reg2 <= 0;
 
-			depth_reg        <= (others => '0');
-			depthWFC_reg     <= (others => '0');
-			innerConvFC_reg  <= '0';
-			filter_input_reg <= (others => (others => '0'));
-			layercount_reg   <= (others => '0');
-			layercount_reg2  <= (others => '0');
+				--maxCounterOutx <= maxCounterOut(0 downto 0);
+				--maxCounterOuty <= maxCounterOut(1 downto 1);
 
-			hold_reg    <= '0';
-			newCalc_reg <= '0';
+				depth_reg        <= (others => '0');
+				depthWFC_reg     <= (others => '0');
+				innerConvFC_reg  <= '0';
+				filter_input_reg <= (others => (others => '0'));
+				layercount_reg   <= (others => '0');
+				layercount_reg2  <= (others => '0');
 
-			newMax_reg  <= '0';
-			calcMax_reg <= '0';
+				hold_reg    <= '0';
+				newCalc_reg <= '0';
 
-			we_ram_reg <= '0';
+				newMax_reg  <= '0';
+				calcMax_reg <= '0';
 
-			for I in 0 to 9 loop
-				resultReg(I) <= (others => '0');
-			end loop;
+				we_ram_reg <= '0';
 
-		elsif rising_edge(clk) then
+				for I in 0 to 9 loop
+					resultReg(I) <= (others => '0');
+				end loop;
+			else
 
-			writeEnableReg <= writeEnable;
-			we_ram         <= writeEnableReg;
+				writeEnableReg <= writeEnable;
+				we_ram         <= writeEnableReg;
 
-			we_ram_reg <= we_ram;
+				we_ram_reg <= we_ram;
 
-			addressX_reg <= addressX;
-			--addressX_reg2 <= addressX_reg;
+				addressX_reg <= addressX;
+				--addressX_reg2 <= addressX_reg;
 
-			addressY_reg <= addressY;
-			--addressY_reg2 <= addressY_reg;
+				addressY_reg <= addressY;
+				--addressY_reg2 <= addressY_reg;
 
-			addressZ_reg     <= addressZ;
-			addressXOut_reg  <= addressXOut;
-			addressXOut_reg1 <= addressXOut_reg;
+				addressZ_reg     <= addressZ;
+				addressXOut_reg  <= addressXOut;
+				addressXOut_reg1 <= addressXOut_reg;
 
-			addressYOut_reg  <= addressYOut;
-			addressYOut_reg1 <= addressYOut_reg;
+				addressYOut_reg  <= addressYOut;
+				addressYOut_reg1 <= addressYOut_reg;
 
-			filter_reg  <= pre_filter;
-			filter_Reg1 <= filter_reg;
-			filter_reg2 <= filter_reg1;
-			--maxCounterOutx <= maxCounterOut(0 downto 0);
-			--maxCounterOuty <= maxCounterOut(1 downto 1);
+				filter_reg  <= pre_filter;
+				filter_Reg1 <= filter_reg;
+				filter_reg2 <= filter_reg1;
+				--maxCounterOutx <= maxCounterOut(0 downto 0);
+				--maxCounterOuty <= maxCounterOut(1 downto 1);
 
-			depth_reg        <= depth;
-			depthWFC_reg     <= depthWFC;
-			innerConvFC_reg  <= innerconvFC;
-			filter_input_reg <= filter_input;
-			layercount_reg   <= layercount;
-			layercount_reg2  <= layercount_reg;
+				depth_reg        <= depth;
+				depthWFC_reg     <= depthWFC;
+				innerConvFC_reg  <= innerconvFC;
+				filter_input_reg <= filter_input;
+				layercount_reg   <= layercount;
+				layercount_reg2  <= layercount_reg;
 
-			hold_reg    <= hold;
-			newCalc_reg <= newCalc;
+				hold_reg    <= hold;
+				newCalc_reg <= newCalc;
 
-			newMax_reg  <= newMax;
-			calcMax_reg <= calcMax;
+				newMax_reg  <= newMax;
+				calcMax_reg <= calcMax;
 
-			for I in 0 to 9 loop
-				resultReg(I) <= resultReg_next(I);
-			end loop;
-
+				for I in 0 to 9 loop
+					resultReg(I) <= resultReg_next(I);
+				end loop;
+			end if;
 		end if;
 	end process;
 end architecture;

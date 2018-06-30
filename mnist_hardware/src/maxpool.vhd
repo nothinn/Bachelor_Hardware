@@ -36,18 +36,21 @@ begin
 
 	RegisterTransfer : process(all)
 	begin
-		if rst = '1' then
-			maxReg <= (others => '0');
-		elsif rising_edge(clk) then
-		  calcMax_reg <= calcMax;
-		  calcMax_reg1 <= calcMax_reg;
-          newMax_reg <= newMax;
-          newMax_reg1 <= newMax_reg;
 		
-			if calcMax_reg1 = '1' then
-				maxReg <= maxRegNext;
+		if rising_edge(clk) then
+			if rst = '1' then
+				maxReg <= (others => '0');
 			else
-				null;
+			  calcMax_reg <= calcMax;
+			  calcMax_reg1 <= calcMax_reg;
+			  newMax_reg <= newMax;
+			  newMax_reg1 <= newMax_reg;
+			
+				if calcMax_reg1 = '1' then
+					maxReg <= maxRegNext;
+				else
+					null;
+				end if;
 			end if;
 		end if;
 

@@ -44,19 +44,22 @@ begin
 	--Read from rom
 	process(all)
 	begin
-		if rst = '1' then
-			blocknr    <= 0;
-			depth_addr <= 0;
-			blockValid <= '0';
-		elsif rising_Edge(clk) then
-			if valid = '0' then
+		
+		if rising_Edge(clk) then
+			if rst = '1' then
 				blocknr    <= 0;
 				depth_addr <= 0;
 				blockValid <= '0';
 			else
-				blockValid <= '1';
-				blocknr    <= rom_blocknr(addressX)(addressY);
-				depth_addr <= rom_depth_addr(addressX)(addressY);
+				if valid = '0' then
+					blocknr    <= 0;
+					depth_addr <= 0;
+					blockValid <= '0';
+				else
+					blockValid <= '1';
+					blocknr    <= rom_blocknr(addressX)(addressY);
+					depth_addr <= rom_depth_addr(addressX)(addressY);
+				end if;
 			end if;
 		end if;
 	end process;

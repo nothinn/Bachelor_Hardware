@@ -169,54 +169,57 @@ begin
 
 	process(clk, rst) is
 	begin
-		if rst = '1' then
-			ready2       <= '1';
-			latchedInput <= (others => (others => '0'));
-			latchedDepth <= 0;
-			latchedAddrX <= 0;
-			latchedAddrY <= 0;
-
-			counter <= 0;
-
-			addressX_reg  <= 0;
-			addressY_reg  <= 0;
-			addressX_reg2 <= 0;
-			addressY_reg2 <= 0;
-
-			blocknr_arr_reg <= (others => 0);
-			blocknr_reg     <= 0;
-
-			depthb_reg     <= 0;
-			depth_addr_reg <= 0;
-
-			wea_reg <= '0';
-		elsif rising_edge(clk) then
-			ready2          <= ready;
-			addressX_reg    <= addressXb;
-			addressY_reg    <= addressYb;
-			addressX_reg2   <= addressX_reg;
-			addressY_reg2   <= addressY_reg;
-			blocknr_arr_reg <= blocknr_arr;
-
-			depthb_reg <= depthb;
-
-			wea_reg <= wea;
-
-			if counter = 0 then
-
-				blocknr_reg    <= blocknr;
-				depth_addr_reg <= depth_addr;
-			end if;
-
-			if wea = '1' then
-				latchedInput <= dia;
-				latchedDepth <= deptha;
-				latchedAddrX <= addressXa;
-				latchedAddrY <= addressYa;
+		
+		if rising_edge(clk) then
+			if rst = '1' then
+				ready2       <= '1';
+				latchedInput <= (others => (others => '0'));
+				latchedDepth <= 0;
+				latchedAddrX <= 0;
+				latchedAddrY <= 0;
 
 				counter <= 0;
-			elsif counter < 0 then
-				counter <= counter + 1;
+
+				addressX_reg  <= 0;
+				addressY_reg  <= 0;
+				addressX_reg2 <= 0;
+				addressY_reg2 <= 0;
+
+				blocknr_arr_reg <= (others => 0);
+				blocknr_reg     <= 0;
+
+				depthb_reg     <= 0;
+				depth_addr_reg <= 0;
+
+				wea_reg <= '0';
+			else
+				ready2          <= ready;
+				addressX_reg    <= addressXb;
+				addressY_reg    <= addressYb;
+				addressX_reg2   <= addressX_reg;
+				addressY_reg2   <= addressY_reg;
+				blocknr_arr_reg <= blocknr_arr;
+
+				depthb_reg <= depthb;
+
+				wea_reg <= wea;
+
+				if counter = 0 then
+
+					blocknr_reg    <= blocknr;
+					depth_addr_reg <= depth_addr;
+				end if;
+
+				if wea = '1' then
+					latchedInput <= dia;
+					latchedDepth <= deptha;
+					latchedAddrX <= addressXa;
+					latchedAddrY <= addressYa;
+
+					counter <= 0;
+				elsif counter < 0 then
+					counter <= counter + 1;
+				end if;
 			end if;
 		end if;
 	end process;

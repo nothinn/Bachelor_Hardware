@@ -82,14 +82,15 @@ begin
 
 	process(clk, rst)
 	begin
-		if rst = '1' then
-			state <= idle;
-			layer <= (others => '0');
-
-		elsif rising_edge(clk) then
-			state <= state_next;
-			layer <= layerNext;
-
+		
+		if rising_edge(clk) then
+			if rst = '1' then
+				state <= idle;
+				layer <= (others => '0');
+			else
+				state <= state_next;
+				layer <= layerNext;
+			end if;
 		end if;
 	end process;
 
