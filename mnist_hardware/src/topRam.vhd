@@ -11,8 +11,7 @@ entity topRam is
 	generic(
 		depth_size : integer := 64;
 		size       : integer := 5;
-		ram_size   : integer := 28;
-		NrOfInputs : integer := 8
+		ram_size   : integer := 28
 	);
 
 	port(
@@ -34,18 +33,11 @@ end entity;
 
 architecture rtl of topRam is
 
-	attribute DONT_TOUCH : string;
-	attribute DONT_TOUCH of ramGen : label is "TRUE";
-	attribute DONT_TOUCH of ramProcess : label is "TRUE";
-	attribute DONT_TOUCH of gen_trans : label is "TRUE";
-	attribute DONT_TOUCH of addressTranslator_inst : label is "TRUE";
-
 	component addressTranslator is
 		generic(
 			depth_size : integer := depth_size;
 			size       : integer := 5;
-			ram_size   : integer := 28;
-			NrOfInputs : integer := 8
+			ram_size   : integer := 28
 		);
 		port(
 			clk        : in  std_logic;
@@ -85,10 +77,10 @@ architecture rtl of topRam is
 
 	type trans_addr is array (integer range size**2 - 1 downto 0) of integer;
 
-	signal blocknr_arr                         : trans_block;
-	signal blocknr_arr_reg                     : trans_block;
-	signal depth_addr_arr, depth_addr_arr_test : trans_addr;
-	signal depth_addr_arr2                     : trans_addr;
+	signal blocknr_arr     : trans_block;
+	signal blocknr_arr_reg : trans_block;
+	signal depth_addr_arr  : trans_addr;
+	signal depth_addr_arr2 : trans_addr;
 
 	signal blocknr          : integer;
 	signal depth_addr       : integer;
@@ -118,8 +110,6 @@ architecture rtl of topRam is
 	signal addressX_reg2 : integer range 0 to ram_size - 1;
 	signal addressY_reg2 : integer range 0 to ram_size - 1;
 
-	signal testValid : std_logic;
-	signal testX     : integer;
 
 	signal depthReg : integer range 0 to depth_size - 1;
 
@@ -141,31 +131,7 @@ architecture rtl of topRam is
 
 begin
 
-	--We make a latch here, because of the blockValid. Not perfect. Consider what to do.
-	/* process(all) is
-begin
-    for i in 0 to size**2-1 loop
-        if blockValid(i) = '1' then
-            depth_addr_arr(blocknr_arr(i)) <= depth_addr_arr2(i) + depth;
-        end if;
-    end loop;
-    end process;*/
 
-	--This implementation can be seen as a crossbar or as an OR gate network. Let synthesis tool decode it.
-	/*
-    process(all) is
-    begin
-        for i in 0 to size**2-1 loop
-            depth_addr_arr_test(i) <= 0;
-        end loop;
-
-        for j in 0 to size**2-1 loop
-            if blockValid(j) = '1' then
-                depth_addr_arr_test(blocknr_arr(j)) <= depth_addr_arr2(j) + depth;
-            end if;
-        end loop;
-    end process;
-    */
 	gen_crossbar : for i in 0 to size**2 - 1 generate
 		gen_crossbar2 : for j in 0 to size**2 - 1 generate
 			process(all) is
@@ -347,8 +313,7 @@ begin
 				generic map(
 					depth_size => depth_size,
 					size       => size,
-					ram_size   => ram_size,
-					NrOfInputs => NrOfInputs
+					ram_size   => ram_size
 				)
 				port map(
 					clk        => clk,
@@ -368,8 +333,7 @@ begin
 		generic map(
 			depth_size => depth_size,
 			size       => size,
-			ram_size   => ram_size,
-			NrOfInputs => NrOfInputs
+			ram_size   => ram_size
 		)
 		port map(
 			clk        => clk,

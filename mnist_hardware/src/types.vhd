@@ -16,7 +16,7 @@ package Types is
 
 	constant inferredWeightBits : integer := 2;
 	
-	constant NrOfInputs : integer := 8;
+	constant NrOfInputs : integer := 2;
 	
 	constant layerCounterWidth : integer := integer(ceil(log2(real(nrOfLayers))));
 	
@@ -35,17 +35,7 @@ package Types is
 
 	type ram_input is array (integer range <>) of MAC_result;
 
-	
-	constant in_simulation : boolean := false --pragma synthesis_off
-	or true--pragma synthesis_on
-	;
-
-	
-	--type mem_type is array (integer range 7 downto 0) of MAC_result;
-
 	type mem_block is array (integer range <>) of MAC_result;
-	
-	--type mem_ram is array (integer range 24 downto 0) of mem_block;
 
 end package Types; 
 

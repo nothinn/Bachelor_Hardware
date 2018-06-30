@@ -8,8 +8,7 @@ entity addressTranslator is
 	generic(
 		depth_size : integer := 64;
 		size       : integer := 5;
-		ram_size   : integer := 28;
-		NrOfInputs : integer := 8
+		ram_size   : integer := 28	
 	);
 	port(
 		clk        : in  std_logic;

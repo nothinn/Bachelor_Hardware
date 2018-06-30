@@ -11,8 +11,7 @@ entity topFirstRam is
 	generic(
 		depth_size : integer := 64;
 		size       : integer := 5;
-		ram_size   : integer := 28;
-		NrOfInputs : integer := 8
+		ram_size   : integer := 28
 	);
 
 	port(
@@ -137,30 +136,7 @@ architecture rtl of topFirstRam is
 
 begin
 
-	--We make a latch here, because of the blockValid. Not perfect. Consider what to do.
-	/* process(all) is
-begin
-    for i in 0 to size**2-1 loop
-        if blockValid(i) = '1' then
-            depth_addr_arr(blocknr_arr(i)) <= depth_addr_arr2(i) + depth;
-        end if;
-    end loop;
-    end process;*/
 
-	--This implementation can be seen as a crossbar or as an OR gate network. Let synthesis tool decode it.
-	/* This is tested and works in simulation.
-    process(all) is
-    begin
-        for i in 0 to size**2-1 loop
-            depth_addr_arr(i) <= 0;
-        end loop;
-
-        for j in 0 to size**2-1 loop
-            if blockValid(j) = '1' then
-                depth_addr_arr(blocknr_arr(j)) <= depth_addr_arr2(j) + depth;
-            end if;
-        end loop;
-    end process;*/
 
 	gen_crossbar : for i in 0 to size**2 - 1 generate
 		gen_crossbar2 : for j in 0 to size**2 - 1 generate

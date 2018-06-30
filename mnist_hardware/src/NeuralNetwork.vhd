@@ -23,25 +23,7 @@ end entity;
 
 architecture rtl of NeuralNetwork is
 
-	--attribute DONT_TOUCH : string;
-	--attribute DONT_TOUCH of  topRam0_inst : label is "TRUE";
-	--attribute DONT_TOUCH of  topRam1_inst : label is "TRUE";
-	--attribute DONT_TOUCH of  muxProcess : label is "TRUE";
-	--attribute DONT_TOUCH of  fsm_inst : label is "TRUE";
-	--attribute DONT_TOUCH of  topfsm_inst : label is "TRUE";
-	--attribute DONT_TOUCH of  GEN_MACFull : label is "TRUE";
-	--attribute DONT_TOUCH of   ResultLogic: label is "TRUE";
 
-	/*component FirstRom is
-        port (
-            clk      : in std_logic;
-            addressX : in integer range 0 to 27;
-            addressY : in integer range 0 to 27;
-            addressZ : in integer range 0 to 2;
-            output   : out unsigned(15 downto 0)
-        );
-    end component;
-    */
 	component MACFullFilter is
 		generic(
 			filter_offset : unsigned(natural(log2(real(nrOfInputs))) - 1 downto 0) := (others => '0')
@@ -120,8 +102,7 @@ architecture rtl of NeuralNetwork is
 		generic(
 			depth_size : integer := 64;
 			size       : integer := 5;
-			ram_size   : integer := 28;
-			NrOfInputs : integer := 8
+			ram_size   : integer := 28
 		);
 		port(
 			clk      : in  std_logic;
@@ -141,8 +122,7 @@ architecture rtl of NeuralNetwork is
 		generic(
 			depth_size : integer;
 			size       : integer;
-			ram_size   : integer;
-			NrOfInputs : integer
+			ram_size   : integer
 		);
 		port(
 			clk       : in  std_logic;
@@ -362,8 +342,7 @@ begin
 		generic map(
 			depth_size => LayerInputDepth(2),
 			size       => 5,
-			ram_size   => LayerWidthHeight(2),
-			NrOfInputs => NrOfInputs
+			ram_size   => LayerWidthHeight(2)
 		)
 		port map(
 			clk      => clk,
@@ -383,7 +362,6 @@ begin
 			depth_size => LayerInputDepth(1),
 			size       => 5,
 			ram_size   => LayerWidthHeight(1),
-			NrOfInputs => NrOfInputs
 		)
 		port map(
 			clk      => clk,
@@ -402,8 +380,7 @@ begin
 		generic map(
 			depth_size => layerInputDepth(0),
 			size       => 5,
-			ram_size   => layerWidthHeight(0),
-			NrOfInputs => 1
+			ram_size   => layerWidthHeight(0)
 		)
 		port map(
 			clk       => clk,
