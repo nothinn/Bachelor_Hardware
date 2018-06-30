@@ -40,8 +40,7 @@ architecture rtl of topFirstRam is
 		generic(
 			depth_size : integer := depth_size;
 			size       : integer := 5;
-			ram_size   : integer := 28;
-			NrOfInputs : integer := 8
+			ram_size   : integer := 28
 		);
 		port(
 			clk        : in  std_logic;
@@ -92,14 +91,14 @@ architecture rtl of topFirstRam is
 	signal depth_addr       : integer;
 	signal depth_addr_added : integer;
 
-	signal latchedInput : ram_input(NrOfINputs - 1 downto 0);
+	signal latchedInput : ram_input(0 downto 0);
 	signal latchedDepth : integer range 0 to depth_size - 1;
 	signal latchedAddrX : integer range 0 to ram_size - 1;
 	signal latchedAddrY : integer range 0 to ram_size - 1;
 
 	signal blockValid : std_logic_vector(size**2 - 1 downto 0);
 	--
-	signal counter    : integer range 0 to NrOfInputs - 1;
+	signal counter    : integer range 0 to 0;
 
 	type type_doa is array (integer range 0 to size **2 - 1) of MAC_result;
 	type type_wea is array (integer range 0 to size **2 - 1) of std_logic;
@@ -177,7 +176,7 @@ begin
 			latchedAddrX <= 0;
 			latchedAddrY <= 0;
 
-			counter <= NrOfInputs - 1;
+			counter <= 0;
 
 			addressX_reg  <= 0;
 			addressY_reg  <= 0;
@@ -216,13 +215,13 @@ begin
 				latchedAddrY <= addressYa;
 
 				counter <= 0;
-			elsif counter < NrOfInputs - 1 then
+			elsif counter < 0 then
 				counter <= counter + 1;
 			end if;
 		end if;
 	end process;
 
-	ready <= '1' when counter = NrOfInputs - 1 else '0';
+	ready <= '1' when counter = 0 else '0';
 
 	ramGen : for i in 0 to size **2 - 1 generate
 		ram_inst : ram
@@ -303,8 +302,7 @@ begin
 				generic map(
 					depth_size => depth_size,
 					size       => size,
-					ram_size   => ram_size,
-					NrOfInputs => NrOfInputs
+					ram_size   => ram_size
 				)
 				port map(
 					clk        => clk,
@@ -324,8 +322,7 @@ begin
 		generic map(
 			depth_size => depth_size,
 			size       => size,
-			ram_size   => ram_size,
-			NrOfInputs => NrOfInputs
+			ram_size   => ram_size
 		)
 		port map(
 			clk        => clk,
