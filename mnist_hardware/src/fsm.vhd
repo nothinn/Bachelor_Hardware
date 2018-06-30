@@ -73,8 +73,9 @@ begin
 				xint_next        <= 0;
 				yint_next        <= 0;
 				depthin_next     <= 0;
+				fcWDepthin_next  <= 0;
+				maxCounter_next  <= (others => '0');
 				filterCount_next <= 0;
-
 				if start = '1' then
 					if convOrFC = '1' then
 						state_next <= prepFC;
